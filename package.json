@@ -1,0 +1,8 @@
+{
+  "name":"wasabee-restaurant-website",
+  "version":"1.0.0",
+  "private":true,
+  "description":"WASABEE Oriental Cuisine online ordering, table booking and admin dashboard",
+  "main":"server.js",
+  "scripts":{"start":"node server.js","dev":"node server.js"}
+}
