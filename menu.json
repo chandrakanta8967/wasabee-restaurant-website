@@ -1,0 +1,2128 @@
+[
+  {
+    "id": "dumplings",
+    "name": "Dumplings",
+    "icon": "🥟",
+    "items": [
+      {
+        "id": "gyoza",
+        "name": "Gyoza",
+        "description": "Traditional Japanese dumplings filled with seasoned vegetables or meat.",
+        "variants": [
+          {
+            "name": "Yaki (Pan-Fried) • Veg",
+            "price": 275
+          },
+          {
+            "name": "Yaki (Pan-Fried) • Non-Veg",
+            "price": 325
+          },
+          {
+            "name": "Shoyu (Soupy) • Veg",
+            "price": 275
+          },
+          {
+            "name": "Shoyu (Soupy) • Non-Veg",
+            "price": 325
+          }
+        ]
+      },
+      {
+        "id": "wonton",
+        "name": "Wonton",
+        "description": "Delicate dumplings served steamed, fried or pan-fried.",
+        "variants": [
+          {
+            "name": "Steamed • Veg",
+            "price": 125
+          },
+          {
+            "name": "Steamed • Non-Veg",
+            "price": 155
+          },
+          {
+            "name": "Fried • Veg",
+            "price": 145
+          },
+          {
+            "name": "Fried • Non-Veg",
+            "price": 175
+          },
+          {
+            "name": "Pan-Fried • Veg",
+            "price": 165
+          },
+          {
+            "name": "Pan-Fried • Non-Veg",
+            "price": 195
+          }
+        ]
+      },
+      {
+        "id": "momo",
+        "name": "Momo",
+        "description": "Steamed dumplings filled with seasoned vegetables or chicken.",
+        "variants": [
+          {
+            "name": "Steamed • Veg",
+            "price": 275
+          },
+          {
+            "name": "Steamed • Non-Veg",
+            "price": 325
+          }
+        ]
+      },
+      {
+        "id": "siumai",
+        "name": "Siu Mai",
+        "description": "Open dumpling served with spring onion sauce.",
+        "variants": [
+          {
+            "name": "Veg",
+            "price": 275
+          },
+          {
+            "name": "Non-Veg",
+            "price": 325
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sushi",
+    "name": "Sushi",
+    "icon": "🍣",
+    "items": [
+      {
+        "id": "veg-gimbap",
+        "name": "Veg Gimbap",
+        "price": 575,
+        "description": "Korean rice rolls with avocado, cheese, cucumber and carrot."
+      },
+      {
+        "id": "nonveg-gimbap",
+        "name": "Non-Veg Gimbap",
+        "price": 625,
+        "description": "Korean rice rolls with chicken, pork and tamago."
+      },
+      {
+        "id": "veg-kimbap",
+        "name": "Veg Kimbap",
+        "price": 575
+      },
+      {
+        "id": "nonveg-kimbap",
+        "name": "Non-Veg Kimbap",
+        "price": 625
+      },
+      {
+        "id": "futomaki",
+        "name": "Futomaki",
+        "price": 875
+      },
+      {
+        "id": "tamaki",
+        "name": "Tamaki Sushi",
+        "price": 1025
+      },
+      {
+        "id": "tempura-sushi",
+        "name": "Tempura Sushi",
+        "variants": [
+          {
+            "name": "Premium",
+            "price": 875
+          },
+          {
+            "name": "Classic",
+            "price": 575
+          }
+        ]
+      },
+      {
+        "id": "yakitori-sushi",
+        "name": "Yakitori Sushi",
+        "price": 575
+      },
+      {
+        "id": "spicy-seabass",
+        "name": "Spicy Seabass Sushi",
+        "price": 695
+      },
+      {
+        "id": "ebi-tori",
+        "name": "Ebi Tori",
+        "price": 1075
+      },
+      {
+        "id": "mixed-maki",
+        "name": "Mixed Maki Sushi",
+        "price": 1075
+      },
+      {
+        "id": "california-uramaki",
+        "name": "California Uramaki",
+        "price": 775
+      },
+      {
+        "id": "buta-tempura",
+        "name": "Buta No Tempura Uramaki",
+        "price": 625
+      },
+      {
+        "id": "chicken-teriyaki-uramaki",
+        "name": "Chicken Teriyaki Uramaki",
+        "price": 575
+      },
+      {
+        "id": "sushi-platter",
+        "name": "Sushi Platter (16 pc, serving for 2)",
+        "variants": [
+          {
+            "name": "Veg",
+            "price": 1075
+          },
+          {
+            "name": "Non-Veg",
+            "price": 1395
+          }
+        ]
+      },
+      {
+        "id": "philadelphia",
+        "name": "Philadelphia Sushi",
+        "price": 1025
+      },
+      {
+        "id": "kakiyaki",
+        "name": "Veg Kakiyaki Sushi Roll",
+        "price": 525
+      },
+      {
+        "id": "sushi-roll-veg",
+        "name": "Sushi Roll Veg",
+        "price": 525
+      },
+      {
+        "id": "sushi-roll-nonveg",
+        "name": "Sushi Roll Non-Veg",
+        "price": 625
+      },
+      {
+        "id": "veg-avocado-cheese",
+        "name": "Veg Avocado Cheese",
+        "price": 575
+      },
+      {
+        "id": "nigiri-crabstick",
+        "name": "Nigiri • Crabstick",
+        "price": 375
+      },
+      {
+        "id": "nigiri-shrimp",
+        "name": "Nigiri • Shrimp",
+        "price": 675
+      },
+      {
+        "id": "nigiri-octopus",
+        "name": "Nigiri • Octopus",
+        "price": 625
+      },
+      {
+        "id": "nigiri-squid",
+        "name": "Nigiri • Squid",
+        "price": 475
+      },
+      {
+        "id": "nigiri-salmon",
+        "name": "Nigiri • Salmon",
+        "price": 675
+      },
+      {
+        "id": "sashimi-crabstick",
+        "name": "Sashimi (6 pc) • Crabstick",
+        "price": 475
+      },
+      {
+        "id": "sashimi-salmon",
+        "name": "Sashimi (6 pc) • Salmon",
+        "price": 1395
+      },
+      {
+        "id": "temaki-avocado",
+        "name": "Temaki (3 pc) • Avocado",
+        "price": 625
+      },
+      {
+        "id": "temaki-cheese",
+        "name": "Temaki (3 pc) • Cheese",
+        "price": 525
+      },
+      {
+        "id": "temaki-crabstick",
+        "name": "Temaki (3 pc) • Crabstick",
+        "price": 675
+      },
+      {
+        "id": "temaki-squid",
+        "name": "Temaki (3 pc) • Squid",
+        "price": 675
+      },
+      {
+        "id": "temaki-salmon",
+        "name": "Temaki (3 pc) • Salmon",
+        "price": 875
+      }
+    ]
+  },
+  {
+    "id": "appetizer",
+    "name": "Appetizer",
+    "icon": "🍢",
+    "subcategories": [
+      {
+        "name": "Japanese Appetizer",
+        "items": [
+          {
+            "id": "dak-gui",
+            "name": "Dak Gui",
+            "price": 345
+          },
+          {
+            "id": "dak-galbi",
+            "name": "Dak Galbi",
+            "price": 345
+          },
+          {
+            "id": "dakgangjeong",
+            "name": "Dakgangjeong",
+            "price": 395
+          },
+          {
+            "id": "bulgogi-chicken",
+            "name": "Bulgogi Chicken",
+            "price": 345
+          },
+          {
+            "id": "dwaejigogi",
+            "name": "Dwaejigogi Bokkeum",
+            "price": 425
+          },
+          {
+            "id": "ojingeo",
+            "name": "Ojingeo Bokkeum",
+            "price": 495
+          },
+          {
+            "id": "tempura-prawn",
+            "name": "Tempura Prawn",
+            "price": 575
+          },
+          {
+            "id": "panko-fish",
+            "name": "Panko Fish",
+            "variants": [
+              {
+                "name": "Basa",
+                "price": 475
+              },
+              {
+                "name": "Bhetki",
+                "price": 575
+              }
+            ]
+          },
+          {
+            "id": "kushiyaki-jp",
+            "name": "Kushiyaki",
+            "variants": [
+              {
+                "name": "Paneer",
+                "price": 345
+              },
+              {
+                "name": "Chicken",
+                "price": 395
+              },
+              {
+                "name": "Basa",
+                "price": 475
+              },
+              {
+                "name": "Bhetki",
+                "price": 575
+              },
+              {
+                "name": "Prawn",
+                "price": 575
+              },
+              {
+                "name": "Squid",
+                "price": 575
+              }
+            ]
+          },
+          {
+            "id": "teriyaki-jp",
+            "name": "Teriyaki",
+            "variants": [
+              {
+                "name": "Paneer",
+                "price": 345
+              },
+              {
+                "name": "Chicken",
+                "price": 395
+              },
+              {
+                "name": "Basa",
+                "price": 475
+              },
+              {
+                "name": "Bhetki",
+                "price": 575
+              },
+              {
+                "name": "Prawn",
+                "price": 575
+              },
+              {
+                "name": "Squid",
+                "price": 575
+              }
+            ]
+          },
+          {
+            "id": "japanese-shrimp",
+            "name": "Japanese Shrimp",
+            "price": 275
+          },
+          {
+            "id": "drunken",
+            "name": "Korean Non-Veg Drunken",
+            "variants": [
+              {
+                "name": "Chicken",
+                "price": 375
+              },
+              {
+                "name": "Basa",
+                "price": 425
+              },
+              {
+                "name": "Bhetki",
+                "price": 545
+              },
+              {
+                "name": "Prawn",
+                "price": 495
+              }
+            ]
+          },
+          {
+            "id": "fish-caldereta",
+            "name": "Fish Caldereta",
+            "price": 375
+          },
+          {
+            "id": "chicken-hamonado",
+            "name": "Chicken Hamonado",
+            "price": 375
+          },
+          {
+            "id": "chicken-satay",
+            "name": "Chicken Satay",
+            "price": 325
+          },
+          {
+            "id": "char-siu-pork",
+            "name": "Char Siu Pork",
+            "price": 375
+          }
+        ]
+      },
+      {
+        "name": "Thai Appetizer",
+        "items": [
+          {
+            "id": "veg-crispy-thai",
+            "name": "Veg Crispy Stir-Fried",
+            "variants": [
+              {
+                "name": "Potato",
+                "price": 175
+              },
+              {
+                "name": "Mushroom",
+                "price": 275
+              },
+              {
+                "name": "Babycorn",
+                "price": 225
+              },
+              {
+                "name": "Paneer",
+                "price": 325
+              }
+            ]
+          },
+          {
+            "id": "nonveg-crispy-thai",
+            "name": "Non-Veg Crispy Stir-Fried",
+            "variants": [
+              {
+                "name": "Chicken",
+                "price": 375
+              },
+              {
+                "name": "Basa",
+                "price": 445
+              },
+              {
+                "name": "Bhetki",
+                "price": 575
+              },
+              {
+                "name": "Prawn",
+                "price": 575
+              },
+              {
+                "name": "Squid",
+                "price": 575
+              }
+            ]
+          },
+          {
+            "id": "roasted-pork",
+            "name": "Thai Roasted Pork with Pak Choi",
+            "price": 425
+          },
+          {
+            "id": "rad-prik",
+            "name": "Rad Prik",
+            "variants": [
+              {
+                "name": "Chicken",
+                "price": 375
+              },
+              {
+                "name": "Basa",
+                "price": 445
+              },
+              {
+                "name": "Bhetki",
+                "price": 575
+              },
+              {
+                "name": "Prawn",
+                "price": 545
+              },
+              {
+                "name": "Squid",
+                "price": 575
+              }
+            ]
+          },
+          {
+            "id": "pad-prik-khing",
+            "name": "Pad Prik Khing",
+            "variants": [
+              {
+                "name": "Chicken",
+                "price": 395
+              },
+              {
+                "name": "Basa",
+                "price": 475
+              },
+              {
+                "name": "Bhetki",
+                "price": 595
+              },
+              {
+                "name": "Prawn",
+                "price": 575
+              },
+              {
+                "name": "Squid",
+                "price": 595
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Chinese Appetizer",
+        "items": [
+          {
+            "id": "veg-choice-sauce-dry",
+            "name": "Veg Tossed in Choice of Sauce",
+            "variants": [
+              {
+                "name": "Potato",
+                "price": 145
+              },
+              {
+                "name": "Babycorn",
+                "price": 175
+              },
+              {
+                "name": "Paneer",
+                "price": 275
+              }
+            ],
+            "addons": [
+              "Chilli Soya",
+              "Pan Fried Chilli",
+              "Crispy Chilli",
+              "Salt & Pepper",
+              "Sweet & Spicy",
+              "Green Chilli",
+              "Szechwan"
+            ]
+          },
+          {
+            "id": "chicken-choice-sauce-dry",
+            "name": "Chicken in Choice of Sauce",
+            "price": 295,
+            "addons": [
+              "Chilli Soya",
+              "Pan Fried Chilli",
+              "Crispy Chilli",
+              "Salt & Pepper",
+              "Sweet & Spicy",
+              "Green Chilli",
+              "Szechwan"
+            ]
+          },
+          {
+            "id": "basa-choice-sauce-dry",
+            "name": "Basa in Choice of Sauce",
+            "price": 345,
+            "addons": [
+              "Chilli Soya",
+              "Pan Fried Chilli",
+              "Crispy Chilli",
+              "Salt & Pepper",
+              "Sweet & Spicy",
+              "Green Chilli",
+              "Szechwan"
+            ]
+          },
+          {
+            "id": "bhetki-choice-sauce-dry",
+            "name": "Bhetki in Choice of Sauce",
+            "price": 495,
+            "addons": [
+              "Chilli Soya",
+              "Pan Fried Chilli",
+              "Crispy Chilli",
+              "Salt & Pepper",
+              "Sweet & Spicy",
+              "Green Chilli",
+              "Szechwan"
+            ]
+          },
+          {
+            "id": "prawn-choice-sauce-dry",
+            "name": "Prawn in Choice of Sauce",
+            "price": 495,
+            "addons": [
+              "Chilli Soya",
+              "Pan Fried Chilli",
+              "Crispy Chilli",
+              "Salt & Pepper",
+              "Sweet & Spicy",
+              "Szechwan"
+            ]
+          },
+          {
+            "id": "pork-choice-sauce-dry",
+            "name": "Pork in Choice of Sauce",
+            "price": 345,
+            "addons": [
+              "Chilli Soya",
+              "Pan Fried Chilli",
+              "Crispy Chilli",
+              "Sweet & Spicy",
+              "Szechwan"
+            ]
+          },
+          {
+            "id": "squid-choice-sauce-dry",
+            "name": "Squid in Choice of Sauce",
+            "price": 495,
+            "addons": [
+              "Chilli Soya",
+              "Pan Fried Chilli",
+              "Crispy Chilli",
+              "Salt & Pepper",
+              "Sweet & Spicy",
+              "Szechwan"
+            ]
+          },
+          {
+            "id": "lat-me-kai",
+            "name": "Chicken Lat Me Kai",
+            "price": 295
+          },
+          {
+            "id": "drums",
+            "name": "Chicken Drums of Heaven",
+            "price": 395
+          },
+          {
+            "id": "golden-prawn",
+            "name": "Golden Fried Prawn",
+            "price": 445
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soup",
+    "name": "Soup",
+    "icon": "🍲",
+    "subcategories": [
+      {
+        "name": "Japanese Soup",
+        "items": [
+          {
+            "id": "miso",
+            "name": "Miso Soup",
+            "variants": [
+              {
+                "name": "Small",
+                "price": 175
+              },
+              {
+                "name": "Regular",
+                "price": 225
+              },
+              {
+                "name": "Large",
+                "price": 245
+              }
+            ]
+          },
+          {
+            "id": "mee-soto",
+            "name": "Mee Soto Soup",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 145
+              },
+              {
+                "name": "Chicken",
+                "price": 195
+              },
+              {
+                "name": "Shrimp",
+                "price": 225
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Thai Soup",
+        "items": [
+          {
+            "id": "tom-yum",
+            "name": "Tom Yum",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 175
+              },
+              {
+                "name": "Chicken",
+                "price": 225
+              },
+              {
+                "name": "Shrimp",
+                "price": 275
+              }
+            ]
+          },
+          {
+            "id": "tom-kha",
+            "name": "Tom Kha",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 175
+              },
+              {
+                "name": "Chicken",
+                "price": 225
+              },
+              {
+                "name": "Shrimp",
+                "price": 275
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Chinese Soup",
+        "items": [
+          {
+            "id": "special-soup",
+            "name": "Wasabee Special Soup",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 145
+              },
+              {
+                "name": "Non-Veg",
+                "price": 275
+              }
+            ]
+          },
+          {
+            "id": "sweet-corn",
+            "name": "Sweet Corn Soup",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 135
+              },
+              {
+                "name": "Chicken",
+                "price": 165
+              }
+            ]
+          },
+          {
+            "id": "hot-sour",
+            "name": "Hot & Sour Soup",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 135
+              },
+              {
+                "name": "Chicken",
+                "price": 165
+              }
+            ]
+          },
+          {
+            "id": "lemon-coriander",
+            "name": "Lemon Coriander Soup",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 135
+              },
+              {
+                "name": "Chicken",
+                "price": 165
+              }
+            ]
+          },
+          {
+            "id": "lemon-garlic",
+            "name": "Lemon Garlic Soup",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 145
+              },
+              {
+                "name": "Chicken",
+                "price": 175
+              }
+            ]
+          },
+          {
+            "id": "manchow",
+            "name": "Manchow Soup",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 135
+              },
+              {
+                "name": "Chicken",
+                "price": 165
+              }
+            ]
+          },
+          {
+            "id": "clear-soup",
+            "name": "Clear Soup",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 125
+              },
+              {
+                "name": "Chicken",
+                "price": 145
+              }
+            ]
+          },
+          {
+            "id": "wonton-soup",
+            "name": "Wonton Soup",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 145
+              },
+              {
+                "name": "Chicken",
+                "price": 175
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rice",
+    "name": "Rice",
+    "icon": "🍚",
+    "subcategories": [
+      {
+        "name": "Korean Rice",
+        "items": [
+          {
+            "id": "bokkeumbap",
+            "name": "Bokkeumbap",
+            "variants": [
+              {
+                "name": "Egg",
+                "price": 325
+              },
+              {
+                "name": "Chicken",
+                "price": 345
+              },
+              {
+                "name": "Shrimp",
+                "price": 375
+              },
+              {
+                "name": "Pork",
+                "price": 375
+              },
+              {
+                "name": "Mixed",
+                "price": 395
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Japanese Rice",
+        "items": [
+          {
+            "id": "chahan",
+            "name": "Chahan Rice",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 275
+              },
+              {
+                "name": "Chicken",
+                "price": 325
+              },
+              {
+                "name": "Pork",
+                "price": 375
+              }
+            ]
+          },
+          {
+            "id": "omu",
+            "name": "Omu Rice",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 325
+              },
+              {
+                "name": "Chicken",
+                "price": 345
+              },
+              {
+                "name": "Shrimp",
+                "price": 375
+              },
+              {
+                "name": "Pork",
+                "price": 395
+              },
+              {
+                "name": "Mixed",
+                "price": 395
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Indonesian / Malaysian / Filipino Rice",
+        "items": [
+          {
+            "id": "nasi-goreng",
+            "name": "Nasi Goreng",
+            "variants": [
+              {
+                "name": "Chicken",
+                "price": 325
+              },
+              {
+                "name": "Shrimp",
+                "price": 345
+              },
+              {
+                "name": "Mixed",
+                "price": 375
+              }
+            ]
+          },
+          {
+            "id": "nasi-kampung",
+            "name": "Nasi Kampung",
+            "variants": [
+              {
+                "name": "Basa",
+                "price": 395
+              },
+              {
+                "name": "Bhetki",
+                "price": 525
+              }
+            ]
+          },
+          {
+            "id": "adobo",
+            "name": "Adobo",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 225
+              },
+              {
+                "name": "Chicken",
+                "price": 275
+              },
+              {
+                "name": "Shrimp",
+                "price": 295
+              },
+              {
+                "name": "Mixed",
+                "price": 325
+              }
+            ]
+          },
+          {
+            "id": "adobo-pork",
+            "name": "Adobo",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 175
+              },
+              {
+                "name": "Chicken",
+                "price": 275
+              },
+              {
+                "name": "Shrimp",
+                "price": 295
+              },
+              {
+                "name": "Pork",
+                "price": 295
+              },
+              {
+                "name": "Mixed",
+                "price": 325
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Thai Rice",
+        "items": [
+          {
+            "id": "khao-pad",
+            "name": "Khao Pad",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 175
+              },
+              {
+                "name": "Egg",
+                "price": 225
+              },
+              {
+                "name": "Chicken",
+                "price": 275
+              },
+              {
+                "name": "Shrimp",
+                "price": 325
+              },
+              {
+                "name": "Pork",
+                "price": 295
+              },
+              {
+                "name": "Mixed",
+                "price": 345
+              }
+            ]
+          },
+          {
+            "id": "thai-garlic-basil",
+            "name": "Thai Garlic Basil Fried Rice",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 175
+              },
+              {
+                "name": "Egg",
+                "price": 225
+              },
+              {
+                "name": "Chicken",
+                "price": 275
+              },
+              {
+                "name": "Shrimp",
+                "price": 325
+              },
+              {
+                "name": "Pork",
+                "price": 295
+              },
+              {
+                "name": "Mixed",
+                "price": 345
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Chinese Rice",
+        "items": [
+          {
+            "id": "fried-rice",
+            "name": "Fried Rice",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 175
+              },
+              {
+                "name": "Egg",
+                "price": 195
+              },
+              {
+                "name": "Chicken",
+                "price": 275
+              },
+              {
+                "name": "Shrimp",
+                "price": 295
+              },
+              {
+                "name": "Pork",
+                "price": 295
+              },
+              {
+                "name": "Mixed",
+                "price": 325
+              }
+            ]
+          },
+          {
+            "id": "szechwan-fried-rice",
+            "name": "Szechwan Fried Rice",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 175
+              },
+              {
+                "name": "Egg",
+                "price": 195
+              },
+              {
+                "name": "Chicken",
+                "price": 275
+              },
+              {
+                "name": "Shrimp",
+                "price": 295
+              },
+              {
+                "name": "Pork",
+                "price": 295
+              },
+              {
+                "name": "Mixed",
+                "price": 325
+              }
+            ]
+          },
+          {
+            "id": "burnt-garlic-fried-rice",
+            "name": "Burnt Garlic Fried Rice",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 175
+              },
+              {
+                "name": "Egg",
+                "price": 195
+              },
+              {
+                "name": "Chicken",
+                "price": 275
+              },
+              {
+                "name": "Shrimp",
+                "price": 295
+              },
+              {
+                "name": "Pork",
+                "price": 295
+              },
+              {
+                "name": "Mixed",
+                "price": 325
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "noodles",
+    "name": "Noodles",
+    "icon": "🍜",
+    "subcategories": [
+      {
+        "name": "Korean Noodles",
+        "items": [
+          {
+            "id": "jajangmyeon",
+            "name": "Jajangmyeon",
+            "variants": [
+              {
+                "name": "Chicken",
+                "price": 375
+              },
+              {
+                "name": "Shrimp",
+                "price": 425
+              },
+              {
+                "name": "Pork",
+                "price": 445
+              },
+              {
+                "name": "Mixed",
+                "price": 475
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Japanese Noodles",
+        "items": [
+          {
+            "id": "yaki-udon",
+            "name": "Yaki Udon",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 345
+              },
+              {
+                "name": "Chicken",
+                "price": 425
+              },
+              {
+                "name": "Shrimp",
+                "price": 445
+              },
+              {
+                "name": "Pork",
+                "price": 445
+              },
+              {
+                "name": "Mixed",
+                "price": 475
+              }
+            ]
+          },
+          {
+            "id": "yaki-soba",
+            "name": "Yaki Soba",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 345
+              },
+              {
+                "name": "Chicken",
+                "price": 425
+              },
+              {
+                "name": "Shrimp",
+                "price": 445
+              },
+              {
+                "name": "Pork",
+                "price": 445
+              },
+              {
+                "name": "Mixed",
+                "price": 475
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Pan Asian Noodles",
+        "items": [
+          {
+            "id": "mee-goreng",
+            "name": "Mee Goreng",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 175
+              },
+              {
+                "name": "Egg",
+                "price": 195
+              },
+              {
+                "name": "Chicken",
+                "price": 295
+              },
+              {
+                "name": "Shrimp",
+                "price": 325
+              },
+              {
+                "name": "Mixed",
+                "price": 345
+              }
+            ]
+          },
+          {
+            "id": "singapore-noodle",
+            "name": "Singapore Rice Noodle",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 275
+              },
+              {
+                "name": "Egg",
+                "price": 325
+              },
+              {
+                "name": "Chicken",
+                "price": 345
+              },
+              {
+                "name": "Shrimp",
+                "price": 375
+              },
+              {
+                "name": "Mixed",
+                "price": 395
+              }
+            ]
+          },
+          {
+            "id": "pad-thai",
+            "name": "Pad Thai",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 195
+              },
+              {
+                "name": "Egg",
+                "price": 245
+              },
+              {
+                "name": "Chicken",
+                "price": 325
+              },
+              {
+                "name": "Shrimp",
+                "price": 375
+              },
+              {
+                "name": "Pork",
+                "price": 345
+              },
+              {
+                "name": "Mixed",
+                "price": 395
+              }
+            ]
+          },
+          {
+            "id": "pad-kee-mao",
+            "name": "Pad Kee Mao",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 245
+              },
+              {
+                "name": "Egg",
+                "price": 275
+              },
+              {
+                "name": "Chicken",
+                "price": 345
+              },
+              {
+                "name": "Shrimp",
+                "price": 375
+              },
+              {
+                "name": "Pork",
+                "price": 375
+              },
+              {
+                "name": "Mixed",
+                "price": 395
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Chinese Noodles",
+        "items": [
+          {
+            "id": "mee-foon",
+            "name": "Mee Foon Noodles",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 145
+              },
+              {
+                "name": "Egg",
+                "price": 175
+              },
+              {
+                "name": "Chicken",
+                "price": 225
+              },
+              {
+                "name": "Shrimp",
+                "price": 275
+              },
+              {
+                "name": "Pork",
+                "price": 275
+              },
+              {
+                "name": "Mixed",
+                "price": 295
+              }
+            ]
+          },
+          {
+            "id": "pan-fried-noodles",
+            "name": "Pan-Fried Noodles",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 145
+              },
+              {
+                "name": "Egg",
+                "price": 175
+              },
+              {
+                "name": "Chicken",
+                "price": 225
+              },
+              {
+                "name": "Shrimp",
+                "price": 275
+              },
+              {
+                "name": "Pork",
+                "price": 275
+              },
+              {
+                "name": "Mixed",
+                "price": 295
+              }
+            ]
+          },
+          {
+            "id": "cantonese-noodles",
+            "name": "Cantonese Noodles",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 175
+              },
+              {
+                "name": "Egg",
+                "price": 195
+              },
+              {
+                "name": "Chicken",
+                "price": 275
+              },
+              {
+                "name": "Shrimp",
+                "price": 295
+              },
+              {
+                "name": "Pork",
+                "price": 295
+              },
+              {
+                "name": "Mixed",
+                "price": 325
+              }
+            ]
+          },
+          {
+            "id": "chilli-garlic-noodles",
+            "name": "Chilli Garlic Noodles",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 175
+              },
+              {
+                "name": "Egg",
+                "price": 195
+              },
+              {
+                "name": "Chicken",
+                "price": 245
+              },
+              {
+                "name": "Shrimp",
+                "price": 295
+              },
+              {
+                "name": "Pork",
+                "price": 295
+              },
+              {
+                "name": "Mixed",
+                "price": 325
+              }
+            ]
+          },
+          {
+            "id": "hakka-noodles",
+            "name": "Hakka Noodles",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 175
+              },
+              {
+                "name": "Egg",
+                "price": 195
+              },
+              {
+                "name": "Chicken",
+                "price": 245
+              },
+              {
+                "name": "Shrimp",
+                "price": 295
+              },
+              {
+                "name": "Pork",
+                "price": 295
+              },
+              {
+                "name": "Mixed",
+                "price": 325
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ramen",
+    "name": "Ramen",
+    "icon": "🍥",
+    "items": [
+      {
+        "id": "miso-ramen",
+        "name": "Miso Ramen",
+        "variants": [
+          {
+            "name": "Veg",
+            "price": 275
+          },
+          {
+            "name": "Chicken",
+            "price": 325
+          },
+          {
+            "name": "Pork",
+            "price": 375
+          }
+        ]
+      },
+      {
+        "id": "shoyu-ramen",
+        "name": "Shoyu Ramen",
+        "variants": [
+          {
+            "name": "Veg",
+            "price": 275
+          },
+          {
+            "name": "Chicken",
+            "price": 325
+          },
+          {
+            "name": "Pork",
+            "price": 375
+          }
+        ]
+      },
+      {
+        "id": "tonkotsu",
+        "name": "Tonkotsu Ramen",
+        "variants": [
+          {
+            "name": "Pork",
+            "price": 375
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "curry",
+    "name": "Curry",
+    "icon": "🍛",
+    "subcategories": [
+      {
+        "name": "Japanese Curry",
+        "items": [
+          {
+            "id": "japanese-mild-curry",
+            "name": "Japanese Mild Curry",
+            "price": 375
+          },
+          {
+            "id": "japanese-golden-curry",
+            "name": "Japanese Golden Curry",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 425
+              },
+              {
+                "name": "Paneer",
+                "price": 525
+              },
+              {
+                "name": "Chicken",
+                "price": 545
+              },
+              {
+                "name": "Basa",
+                "price": 625
+              },
+              {
+                "name": "Bhetki",
+                "price": 695
+              },
+              {
+                "name": "Pork",
+                "price": 595
+              },
+              {
+                "name": "Prawn",
+                "price": 695
+              },
+              {
+                "name": "Squid",
+                "price": 695
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Thai Curry",
+        "items": [
+          {
+            "id": "thai-red-curry",
+            "name": "Thai Red Curry",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 345
+              },
+              {
+                "name": "Paneer",
+                "price": 395
+              },
+              {
+                "name": "Chicken",
+                "price": 425
+              },
+              {
+                "name": "Basa",
+                "price": 495
+              },
+              {
+                "name": "Bhetki",
+                "price": 625
+              },
+              {
+                "name": "Pork",
+                "price": 495
+              },
+              {
+                "name": "Prawn",
+                "price": 625
+              },
+              {
+                "name": "Squid",
+                "price": 625
+              }
+            ]
+          },
+          {
+            "id": "thai-green-curry",
+            "name": "Thai Green Curry",
+            "variants": [
+              {
+                "name": "Veg",
+                "price": 345
+              },
+              {
+                "name": "Paneer",
+                "price": 395
+              },
+              {
+                "name": "Chicken",
+                "price": 425
+              },
+              {
+                "name": "Basa",
+                "price": 495
+              },
+              {
+                "name": "Bhetki",
+                "price": 625
+              },
+              {
+                "name": "Pork",
+                "price": 495
+              },
+              {
+                "name": "Prawn",
+                "price": 625
+              },
+              {
+                "name": "Squid",
+                "price": 625
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "main-course",
+    "name": "Main Course",
+    "icon": "🍽️",
+    "subcategories": [
+      {
+        "name": "Thai Main Course",
+        "items": [
+          {
+            "id": "pad-prik-pao",
+            "name": "Pad Prik Pao",
+            "variants": [
+              {
+                "name": "Chicken",
+                "price": 325
+              },
+              {
+                "name": "Basa",
+                "price": 375
+              },
+              {
+                "name": "Bhetki",
+                "price": 545
+              },
+              {
+                "name": "Prawn",
+                "price": 495
+              },
+              {
+                "name": "Pork",
+                "price": 425
+              }
+            ]
+          },
+          {
+            "id": "pad-pak",
+            "name": "Pad Pak",
+            "variants": [
+              {
+                "name": "Chicken",
+                "price": 275
+              },
+              {
+                "name": "Basa",
+                "price": 345
+              },
+              {
+                "name": "Bhetki",
+                "price": 525
+              },
+              {
+                "name": "Prawn",
+                "price": 475
+              },
+              {
+                "name": "Pork",
+                "price": 375
+              }
+            ]
+          },
+          {
+            "id": "tod-kratiem",
+            "name": "Tod Kratiem Prik Thai",
+            "variants": [
+              {
+                "name": "Chicken",
+                "price": 375
+              },
+              {
+                "name": "Basa",
+                "price": 445
+              },
+              {
+                "name": "Bhetki",
+                "price": 595
+              },
+              {
+                "name": "Prawn",
+                "price": 575
+              },
+              {
+                "name": "Pork",
+                "price": 495
+              }
+            ]
+          },
+          {
+            "id": "pad-med",
+            "name": "Pad Med Mamuang",
+            "variants": [
+              {
+                "name": "Chicken",
+                "price": 325
+              },
+              {
+                "name": "Basa",
+                "price": 395
+              },
+              {
+                "name": "Bhetki",
+                "price": 525
+              },
+              {
+                "name": "Prawn",
+                "price": 495
+              },
+              {
+                "name": "Pork",
+                "price": 395
+              }
+            ]
+          },
+          {
+            "id": "pad-prew-wan",
+            "name": "Pad Prew Wan",
+            "variants": [
+              {
+                "name": "Chicken",
+                "price": 325
+              },
+              {
+                "name": "Basa",
+                "price": 395
+              },
+              {
+                "name": "Bhetki",
+                "price": 545
+              },
+              {
+                "name": "Prawn",
+                "price": 495
+              },
+              {
+                "name": "Pork",
+                "price": 395
+              }
+            ]
+          },
+          {
+            "id": "pad-prik-gaeng",
+            "name": "Pad Prik Gaeng",
+            "variants": [
+              {
+                "name": "Chicken",
+                "price": 345
+              },
+              {
+                "name": "Basa",
+                "price": 425
+              },
+              {
+                "name": "Bhetki",
+                "price": 575
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Chinese Main Course • Veg",
+        "items": [
+          {
+            "id": "veg-manchurian",
+            "name": "Veg Manchurian",
+            "price": 225
+          },
+          {
+            "id": "eight-treasure",
+            "name": "Eight Treasure Veg",
+            "price": 145
+          },
+          {
+            "id": "devils-choice",
+            "name": "Devils Choice Veg",
+            "price": 145
+          },
+          {
+            "id": "pak-choy",
+            "name": "Pak Choy Delight",
+            "price": 145
+          },
+          {
+            "id": "veg-gravy",
+            "name": "Veg in Choice of Sauce Gravy",
+            "price": 175,
+            "addons": [
+              "Szechwan",
+              "Chilli Soya",
+              "Garlic Sauce"
+            ]
+          },
+          {
+            "id": "baby-mushroom-paneer",
+            "name": "Baby Corn-Mushroom Paneer",
+            "price": 275
+          }
+        ]
+      },
+      {
+        "name": "Chinese Main Course • Non-Veg",
+        "items": [
+          {
+            "id": "chicken-gravy",
+            "name": "Chicken in Choice of Sauce Gravy",
+            "price": 325,
+            "addons": [
+              "Szechwan",
+              "Chilli Soya",
+              "Garlic",
+              "Chilli Oyster",
+              "Manchurian",
+              "Hot Garlic",
+              "Black Bean",
+              "Devil's",
+              "Lemon",
+              "Cantonese",
+              "Kung Pao",
+              "Hong Kong",
+              "Sweet & Sour",
+              "Butter Garlic Sauce"
+            ]
+          },
+          {
+            "id": "basa-gravy",
+            "name": "Basa in Choice of Sauce Gravy",
+            "price": 375,
+            "addons": [
+              "Szechwan",
+              "Chilli Soya",
+              "Garlic",
+              "Chilli Oyster",
+              "Manchurian",
+              "Hot Garlic",
+              "Black Bean",
+              "Devil's",
+              "Lemon",
+              "Cantonese",
+              "Kung Pao",
+              "Hong Kong",
+              "Sweet & Sour",
+              "Butter Garlic Sauce"
+            ]
+          },
+          {
+            "id": "bhetki-gravy",
+            "name": "Bhetki in Choice of Sauce Gravy",
+            "price": 495,
+            "addons": [
+              "Szechwan",
+              "Chilli Soya",
+              "Garlic",
+              "Chilli Oyster",
+              "Manchurian",
+              "Hot Garlic",
+              "Black Bean",
+              "Devil's",
+              "Lemon",
+              "Cantonese",
+              "Kung Pao",
+              "Hong Kong",
+              "Sweet & Sour",
+              "Butter Garlic Sauce"
+            ]
+          },
+          {
+            "id": "prawn-gravy",
+            "name": "Prawn in Choice of Sauce Gravy",
+            "price": 495,
+            "addons": [
+              "Szechwan",
+              "Chilli Soya",
+              "Garlic",
+              "Chilli Oyster",
+              "Manchurian",
+              "Hot Garlic",
+              "Black Bean",
+              "Devil's",
+              "Lemon",
+              "Cantonese",
+              "Kung Pao",
+              "Hong Kong",
+              "Sweet & Sour",
+              "Butter Garlic Sauce"
+            ]
+          },
+          {
+            "id": "pork-gravy",
+            "name": "Pork in Choice of Sauce Gravy",
+            "price": 375,
+            "addons": [
+              "Szechwan",
+              "Chilli Soya",
+              "Garlic",
+              "Chilli Oyster",
+              "Manchurian",
+              "Hot Garlic",
+              "Black Bean",
+              "Devil's",
+              "Lemon",
+              "Cantonese",
+              "Kung Pao",
+              "Hong Kong",
+              "Sweet & Sour",
+              "Butter Garlic Sauce"
+            ]
+          },
+          {
+            "id": "squid-gravy",
+            "name": "Squid in Choice of Sauce Gravy",
+            "price": 495,
+            "addons": [
+              "Szechwan",
+              "Chilli Soya",
+              "Garlic",
+              "Chilli Oyster",
+              "Manchurian",
+              "Hot Garlic",
+              "Black Bean",
+              "Devil's",
+              "Lemon",
+              "Cantonese",
+              "Kung Pao",
+              "Hong Kong",
+              "Sweet & Sour",
+              "Butter Garlic Sauce"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "desserts",
+    "name": "Desserts",
+    "icon": "🍮",
+    "items": [
+      {
+        "id": "darsaan",
+        "name": "Darsaan",
+        "price": 175
+      },
+      {
+        "id": "hot-brownie",
+        "name": "Hot Brownie",
+        "price": 125
+      },
+      {
+        "id": "caramel-pudding",
+        "name": "Caramel Pudding",
+        "price": 125
+      }
+    ]
+  }
+]
