@@ -1,0 +1,38 @@
+WASABEE RESTAURANT - RENDER DEPLOYMENT
+
+IMPORTANT FOLDER STRUCTURE
+---------------------------
+package.json
+server.js
+data/
+public/
+  index.html
+  app.js
+  styles.css
+  admin/
+    index.html
+    admin.js
+    admin.css
+  assets/
+    logo.png
+    logo-white.png
+    wasabee-menu.pdf
+
+RENDER SETTINGS
+---------------
+Language: Node
+Branch: main
+Root Directory: leave EMPTY
+Build Command: npm install
+Start Command: node server.js
+Instance: Free
+
+IMPORTANT
+---------
+Do NOT put package.json or server.js inside public/.
+The customer website files belong inside public/.
+The admin page is available at /admin
+
+The server is already configured to serve:
+  /              -> public/index.html
+  /admin         -> public/admin/index.html
