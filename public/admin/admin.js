@@ -12,7 +12,7 @@ const r=await fetch('/api/admin/login',{
 method:'POST',
 headers:{'Content-Type':'application/json'},
 body:JSON.stringify({
-password:new FormData(e.target).get('password')
+password:String(new FormData(e.target).get('password')||'').trim()
 })
 });
 
