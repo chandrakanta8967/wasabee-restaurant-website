@@ -4,11 +4,10 @@ const path = require('path');
 const crypto = require('crypto');
 const url = require('url');
 
-const PORT = process.env.PORT || 3000;
-const ROOT = __dirname;
-const DATA = path.join(ROOT, 'data');
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'wasabee-admin';
-
+const PORT=process.env.PORT||3000;
+const ROOT=__dirname;
+const DATA=path.join(ROOT,'data');
+const ADMIN_PASSWORD=String(process.env.ADMIN_PASSWORD||'wasabee-admin').trim();
 if (!fs.existsSync(DATA)) {
   fs.mkdirSync(DATA, { recursive: true });
 }
@@ -439,23 +438,20 @@ async function api(req,res,p){
   // =========================
   // ADMIN LOGIN
   // =========================
-  if(req.method==='POST' && p==='/api/admin/login'){
-    const b=await body(req);
+if(req.method==='POST'&&p==='/api/admin/login'){
+  const b=await body(req);
+  const enteredPassword=String(b.password||'').trim();
 
-    if(b.password!==ADMIN_PASSWORD){
-      return send(res,401,{
-        error:'Wrong password'
-      });
-    }
-
-    const t=crypto.randomBytes(24).toString('hex');
-
-    sessions.add(t);
-
-    return send(res,200,{
-      token:t
-    });
+  if(enteredPassword!==ADMIN_PASSWORD){
+    console.log('Admin login failed');
+    return send(res,401,{error:'Wrong password'});
   }
+
+  const t=crypto.randomBytes(24).toString('hex');
+  sessions.add(t);
+
+  return send(res,200,{token:t});
+}
 
   // =========================
   // ADMIN AUTH
