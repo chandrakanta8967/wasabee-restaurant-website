@@ -6,8 +6,79 @@ function renderCats(){const c=DATA.menu;$('#categories').innerHTML=c.map((x,i)=>
 function flattenItems(cat){if(cat.items)return cat.items.map(x=>({...x,sub:''}));return (cat.subcategories||[]).flatMap(s=>(s.items||[]).map(x=>({...x,sub:s.name})));}
 function imageFor(item){if(item.image)return item.image;const q=encodeURIComponent(item.name);return `https://source.unsplash.com/600x400/?${q},asian-food`}
 function renderMenu(){let html='';for(const cat of DATA.menu){html+=`<section class="menu-category" id="cat-${cat.id}"><h3>${cat.icon||''} ${cat.name}</h3>`;if(cat.subcategories){for(const sub of cat.subcategories){html+=`<div class="subcat">${sub.name}</div><div class="grid">${sub.items.map(itemCard).join('')}</div>`}}else html+=`<div class="grid">${cat.items.map(itemCard).join('')}</div>`;html+='</section>'}$('#menu').innerHTML=html}
-function itemCard(item){if(item.active===false)return '';const base=item.variants?Math.min(...item.variants.map(v=>v.price)):item.price;const label=item.variants?`${item.variants.length} choices`:money(base);return `<article class="food-card"><div class="food-img",url('${imageFor(item)}');background-size:cover;background-position:center"><span>${item.name.includes('Soup')?'🍲':item.name.toLowerCase().includes('sushi')?'':''}</span></div><div class="food-body"><h4>${item.name}</h4><p>${item.description||'Authentic oriental preparation crafted by WASABEE.'}</p>${item.variants?`<span class="variant-label">${label} • Select before adding</span>`:''}<div class="price-row"><span class="price">${item.variants?`From ${money(base)}`:money(item.price)}</span><button class="add" onclick='openItem(${JSON.stringify(item).replace(/'/g,"&#39;")})'>Add +</button></div></div></article>`}
-function openItem(item){
+function itemCard(item){
+  if(item.active===false)return '';
+
+  const base=item.variants
+    ? Math.min(...item.variants.map(v=>v.price))
+    : item.price;
+
+  const label=item.variants
+    ? `${item.variants.length} choices`
+    : money(base);
+
+  return `
+    <article class="food-card">
+
+      <div
+        class="food-img"
+        style="
+          background-image:url('${imageFor(item)}');
+          background-size:cover;
+          background-position:center;
+        "
+      >
+        <span>
+          ${
+            item.name.includes('Soup')
+              ? '🍲'
+              : item.name.toLowerCase().includes('sushi')
+                ? ''
+                : ''
+          }
+        </span>
+      </div>
+
+      <div class="food-body">
+
+        <h4>${item.name}</h4>
+
+        <p>
+          ${item.description || 'Authentic oriental preparation crafted by WASABEE.'}
+        </p>
+
+        ${
+          item.variants
+            ? `<span class="variant-label">
+                ${label} • Select before adding
+              </span>`
+            : ''
+        }
+
+        <div class="price-row">
+
+          <span class="price">
+            ${
+              item.variants
+                ? `From ${money(base)}`
+                : money(item.price)
+            }
+          </span>
+
+          <button
+            class="add"
+            onclick='openItem(${JSON.stringify(item).replace(/'/g,"&#39;")})'
+          >
+            Add +
+          </button>
+
+        </div>
+
+      </div>
+
+    </article>
+  `;
+}function openItem(item){
  const groups=(item.addonGroups||[]).map(id=>(DATA.settings.addonGroups||[]).find(g=>g.id===id)).filter(g=>g&&g.active!==false);
  let addonHtml='';
  if(groups.length){addonHtml=`<div class="addon-section"><div class="addon-section-title"><span>➕ Customize Your Order</span><small>Choose options if you want</small></div>${groups.map(g=>`<div class="addon-group"><div class="addon-group-title"><div><h3>${g.name}</h3><small>${g.description||''}</small></div><span class="addon-rule">${g.required?'Required':'Optional'} · ${g.selection==='multiple'?'Choose multiple':'Choose one'}</span></div><div class="addon-choice-list">${(g.options||[]).filter(o=>o.active!==false).map(o=>`<button type="button" class="addon-choice" data-group="${g.id}" data-mode="${g.selection==='multiple'?'multiple':'single'}" data-price="${Number(o.price||0)}" data-name="${String(o.name).replace(/"/g,'&quot;')}" onclick="selectAddonChoice(this)"><span>${g.selection==='multiple'?'☐':'○'}</span><b>${o.name}</b><em>${Number(o.price||0)?'+'+money(o.price):'Included'}</em></button>`).join('')||'<div class="empty">No active options in this group.</div>'}</div></div>`).join('')}</div>`}
