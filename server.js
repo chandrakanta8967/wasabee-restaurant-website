@@ -7,45 +7,40 @@ const url = require('url');
 const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
 const DATA = path.join(ROOT, 'data');
-const PUBLIC = path.join(ROOT, 'public');
-const UPLOADS = path.join(PUBLIC, 'uploads');
-
-const ADMIN_PASSWORD =
-  process.env.ADMIN_PASSWORD || 'wasabee-admin';
-
-const sessions = new Set();
-
-/* =========================================================
-   DIRECTORIES
-   ========================================================= */
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'wasabee-admin');
 
 if (!fs.existsSync(DATA)) {
   fs.mkdirSync(DATA, { recursive: true });
 }
 
-if (!fs.existsSync(PUBLIC)) {
-  fs.mkdirSync(PUBLIC, { recursive: true });
-}
+const mime = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.pdf': 'application/pdf'
+};
 
-if (!fs.existsSync(UPLOADS)) {
-  fs.mkdirSync(UPLOADS, { recursive: true });
-}
-
-/* =========================================================
-   DATA HELPERS
-   ========================================================= */
+/* =========================
+   FILE HELPERS
+========================= */
 
 const read = (file) => {
   const p = path.join(DATA, file);
 
   if (!fs.existsSync(p)) {
-    fs.writeFileSync(p, '[]', 'utf8');
+    fs.writeFileSync(p, '[]');
   }
 
   try {
     return JSON.parse(fs.readFileSync(p, 'utf8'));
   } catch (e) {
-    console.error('JSON read error:', file, e);
     return [];
   }
 };
@@ -63,30 +58,9 @@ const write = (file, data) => {
   fs.renameSync(temp, p);
 };
 
-/* =========================================================
-   MIME TYPES
-   ========================================================= */
-
-const mime = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.webp': 'image/webp',
-  '.gif': 'image/gif',
-  '.svg': 'image/svg+xml',
-
-  '.pdf': 'application/pdf',
-  '.ico': 'image/x-icon'
-};
-
-/* =========================================================
+/* =========================
    RESPONSE
-   ========================================================= */
+========================= */
 
 function send(
   res,
@@ -106,20 +80,20 @@ function send(
   }
 }
 
-/* =========================================================
+/* =========================
    REQUEST BODY
-   ========================================================= */
+========================= */
 
 function body(req) {
   return new Promise((resolve, reject) => {
     let b = '';
 
-    req.on('data', (chunk) => {
+    req.on('data', chunk => {
       b += chunk;
 
-      if (b.length > 15e6) {
-        reject(new Error('Request body too large'));
+      if (b.length > 10e6) {
         req.destroy();
+        reject(new Error('Request too large'));
       }
     });
 
@@ -135,58 +109,92 @@ function body(req) {
   });
 }
 
-/* =========================================================
-   AUTH
-   ========================================================= */
+/* =========================
+   ADMIN AUTH
+   Persistent across Render restart
+========================= */
+
+function makeAdminToken() {
+  return crypto
+    .createHmac('sha256', ADMIN_PASSWORD)
+    .update('WASABEE_ADMIN_SESSION')
+    .digest('hex');
+}
 
 function authed(req) {
   const h = req.headers.authorization || '';
 
-  return (
-    h.startsWith('Bearer ') &&
-    sessions.has(h.slice(7))
-  );
+  if (!h.startsWith('Bearer ')) {
+    return false;
+  }
+
+  const token = h.slice(7);
+
+  return token === makeAdminToken();
 }
 
-/* =========================================================
+/* =========================
+   MENU ITEMS
+========================= */
+
+function allItems(menu) {
+  const out = [];
+
+  for (const c of menu || []) {
+
+    for (const i of c.items || []) {
+      out.push({
+        ...i,
+        category: c.name
+      });
+    }
+
+    for (const s of c.subcategories || []) {
+      for (const i of s.items || []) {
+        out.push({
+          ...i,
+          category: c.name,
+          subcategory: s.name
+        });
+      }
+    }
+  }
+
+  return out;
+}
+
+/* =========================
    IMAGE UPLOAD
-   ========================================================= */
+========================= */
 
 function saveUploadedImage(filename, data) {
-  if (!filename || !data) {
-    throw new Error('Filename or image data missing');
+
+  const uploadDir =
+    path.join(ROOT, 'public', 'uploads');
+
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, {
+      recursive: true
+    });
   }
 
   const ext =
-    path.extname(filename).toLowerCase();
+    path.extname(filename || '').toLowerCase();
 
   const allowed = [
     '.jpg',
     '.jpeg',
     '.png',
     '.webp',
-    '.gif'
+    '.gif',
+    '.svg'
   ];
 
   if (!allowed.includes(ext)) {
     throw new Error(
-      'Only JPG, JPEG, PNG, WEBP and GIF images are allowed'
+      'Only JPG, JPEG, PNG, WEBP, GIF and SVG images are allowed'
     );
   }
-
-  let base64 = String(data);
-
-  /*
-    Accept:
-    data:image/png;base64,XXXX
-    OR
-    plain base64
-  */
-
-  base64 = base64.replace(
-    /^data:image\/[^;]+;base64,/,
-    ''
-  );
 
   const originalName =
     path.basename(filename, ext);
@@ -204,111 +212,32 @@ function saveUploadedImage(filename, data) {
     ext;
 
   const filePath =
-    path.join(UPLOADS, finalName);
+    path.join(uploadDir, finalName);
+
+  const base64 =
+    String(data)
+      .replace(
+        /^data:image\/[^;]+;base64,/,
+        ''
+      );
 
   fs.writeFileSync(
     filePath,
     Buffer.from(base64, 'base64')
   );
 
-  console.log(
-    'Image uploaded:',
-    finalName
-  );
-
   return '/uploads/' + finalName;
 }
 
-/* =========================================================
+/* =========================
    API
-   ========================================================= */
+========================= */
 
 async function api(req, res, p) {
 
-  /* -------------------------------------------------------
-     ADMIN LOGIN
-     ------------------------------------------------------- */
-
-  if (
-    req.method === 'POST' &&
-    p === '/api/admin/login'
-  ) {
-    try {
-      const b = await body(req);
-
-      if (b.password !== ADMIN_PASSWORD) {
-        return send(res, 401, {
-          error: 'Wrong password'
-        });
-      }
-
-      const token =
-        crypto
-          .randomBytes(24)
-          .toString('hex');
-
-      sessions.add(token);
-
-      return send(res, 200, {
-        token
-      });
-
-    } catch (e) {
-      return send(res, 400, {
-        error: 'Invalid request'
-      });
-    }
-  }
-
-  /* -------------------------------------------------------
-     ADMIN IMAGE UPLOAD
-     ------------------------------------------------------- */
-
-  if (
-    req.method === 'POST' &&
-    p === '/api/admin/upload'
-  ) {
-
-    if (!authed(req)) {
-      return send(res, 401, {
-        ok: false,
-        error: 'Unauthorized'
-      });
-    }
-
-    try {
-      const b = await body(req);
-
-      const imageUrl =
-        saveUploadedImage(
-          b.filename,
-          b.data
-        );
-
-      return send(res, 200, {
-        ok: true,
-        url: imageUrl
-      });
-
-    } catch (e) {
-
-      console.error(
-        'Image upload error:',
-        e
-      );
-
-      return send(res, 400, {
-        ok: false,
-        error:
-          e.message ||
-          'Image upload failed'
-      });
-    }
-  }
-
-  /* -------------------------------------------------------
+  /* -------------------------
      PUBLIC DATA
-     ------------------------------------------------------- */
+  ------------------------- */
 
   if (
     req.method === 'GET' &&
@@ -323,190 +252,146 @@ async function api(req, res, p) {
 
       reviews:
         read('reviews.json')
-          .filter(
-            x => x.approved !== false
-          )
+          .filter(x => x.approved !== false)
           .slice(-30)
           .reverse(),
 
       coupons:
         read('coupons.json')
-          .filter(
-            x => x.active !== false
-          )
+          .filter(x => x.active !== false)
     });
   }
 
-  /* -------------------------------------------------------
-     PUBLIC ORDERS
-     ------------------------------------------------------- */
+  /* -------------------------
+     ORDERS
+  ------------------------- */
 
   if (
     req.method === 'POST' &&
     p === '/api/orders'
   ) {
 
-    try {
-      const b = await body(req);
+    const b = await body(req);
+    const a = read('orders.json');
 
-      const orders =
-        read('orders.json');
+    const o = {
+      id: 'WAS-' + Date.now(),
+      createdAt: new Date().toISOString(),
+      status: 'NEW',
+      ...b
+    };
 
-      const order = {
-        id:
-          'WAS-' +
-          Date.now(),
+    a.push(o);
 
-        createdAt:
-          new Date().toISOString(),
+    write('orders.json', a);
 
-        status: 'NEW',
-
-        ...b
-      };
-
-      orders.push(order);
-
-      write(
-        'orders.json',
-        orders
-      );
-
-      return send(res, 200, {
-        ok: true,
-        orderId: order.id
-      });
-
-    } catch (e) {
-
-      console.error(e);
-
-      return send(res, 400, {
-        ok: false,
-        error: 'Order could not be saved'
-      });
-    }
+    return send(res, 200, {
+      ok: true,
+      orderId: o.id
+    });
   }
 
-  /* -------------------------------------------------------
-     PUBLIC BOOKINGS
-     ------------------------------------------------------- */
+  /* -------------------------
+     BOOKINGS
+  ------------------------- */
 
   if (
     req.method === 'POST' &&
     p === '/api/bookings'
   ) {
 
-    try {
-      const b = await body(req);
+    const b = await body(req);
+    const a = read('bookings.json');
 
-      const bookings =
-        read('bookings.json');
+    const o = {
+      id: 'TB-' + Date.now(),
+      createdAt: new Date().toISOString(),
+      status: 'NEW',
+      ...b
+    };
 
-      const booking = {
-        id:
-          'TB-' +
-          Date.now(),
+    a.push(o);
 
-        createdAt:
-          new Date().toISOString(),
+    write('bookings.json', a);
 
-        status: 'NEW',
-
-        ...b
-      };
-
-      bookings.push(booking);
-
-      write(
-        'bookings.json',
-        bookings
-      );
-
-      return send(res, 200, {
-        ok: true,
-        id: booking.id
-      });
-
-    } catch (e) {
-
-      console.error(e);
-
-      return send(res, 400, {
-        ok: false,
-        error:
-          'Booking could not be saved'
-      });
-    }
+    return send(res, 200, {
+      ok: true,
+      id: o.id
+    });
   }
 
-  /* -------------------------------------------------------
-     PUBLIC REVIEWS
-     ------------------------------------------------------- */
+  /* -------------------------
+     REVIEWS
+  ------------------------- */
 
   if (
     req.method === 'POST' &&
     p === '/api/reviews'
   ) {
 
-    try {
-      const b = await body(req);
+    const b = await body(req);
+    const a = read('reviews.json');
 
-      const reviews =
-        read('reviews.json');
+    const o = {
+      id: 'RV-' + Date.now(),
+      createdAt: new Date().toISOString(),
+      approved: true,
+      ...b
+    };
 
-      const review = {
-        id:
-          'RV-' +
-          Date.now(),
+    a.push(o);
 
-        createdAt:
-          new Date().toISOString(),
+    write('reviews.json', a);
 
-        approved: true,
+    return send(res, 200, {
+      ok: true
+    });
+  }
 
-        ...b
-      };
+  /* -------------------------
+     ADMIN LOGIN
+  ------------------------- */
 
-      reviews.push(review);
+  if (
+    req.method === 'POST' &&
+    p === '/api/admin/login'
+  ) {
 
-      write(
-        'reviews.json',
-        reviews
-      );
+    const b = await body(req);
 
-      return send(res, 200, {
-        ok: true
+    if (
+      b.password !== ADMIN_PASSWORD
+    ) {
+
+      return send(res, 401, {
+        error: 'Wrong password'
       });
+    }
 
-    } catch (e) {
+    return send(res, 200, {
+      token: makeAdminToken()
+    });
+  }
 
-      console.error(e);
+  /* -------------------------
+     ADMIN AUTH CHECK
+  ------------------------- */
 
-      return send(res, 400, {
-        ok: false,
-        error:
-          'Review could not be saved'
+  if (
+    p.startsWith('/api/admin/')
+  ) {
+
+    if (!authed(req)) {
+
+      return send(res, 401, {
+        error: 'Unauthorized'
       });
     }
   }
 
-  /* -------------------------------------------------------
-     ALL OTHER ADMIN API
-     ------------------------------------------------------- */
-
-  if (
-    p.startsWith('/api/admin/') &&
-    !authed(req)
-  ) {
-    return send(res, 401, {
-      error: 'Unauthorized'
-    });
-  }
-
-  /* -------------------------------------------------------
+  /* -------------------------
      ADMIN DATA
-     ------------------------------------------------------- */
+  ------------------------- */
 
   if (
     req.method === 'GET' &&
@@ -544,17 +429,64 @@ async function api(req, res, p) {
     });
   }
 
-  /* -------------------------------------------------------
-     MENU
-     ------------------------------------------------------- */
+  /* -------------------------
+     ADMIN IMAGE UPLOAD
+  ------------------------- */
+
+  if (
+    req.method === 'POST' &&
+    p === '/api/admin/upload'
+  ) {
+
+    try {
+
+      const b = await body(req);
+
+      if (!b.filename || !b.data) {
+
+        return send(res, 400, {
+          ok: false,
+          error: 'Filename or image data missing'
+        });
+      }
+
+      const imageUrl =
+        saveUploadedImage(
+          b.filename,
+          b.data
+        );
+
+      return send(res, 200, {
+        ok: true,
+        url: imageUrl
+      });
+
+    } catch (err) {
+
+      console.error(
+        'Image upload error:',
+        err
+      );
+
+      return send(res, 400, {
+        ok: false,
+        error:
+          err.message ||
+          'Image upload failed'
+      });
+    }
+  }
+
+  /* -------------------------
+     ADMIN MENU
+  ------------------------- */
 
   if (
     req.method === 'PUT' &&
     p === '/api/admin/menu'
   ) {
 
-    const data =
-      await body(req);
+    const data = await body(req);
 
     write(
       'menu.json',
@@ -566,17 +498,16 @@ async function api(req, res, p) {
     });
   }
 
-  /* -------------------------------------------------------
-     SETTINGS
-     ------------------------------------------------------- */
+  /* -------------------------
+     ADMIN SETTINGS
+  ------------------------- */
 
   if (
     req.method === 'PUT' &&
     p === '/api/admin/settings'
   ) {
 
-    const data =
-      await body(req);
+    const data = await body(req);
 
     write(
       'settings.json',
@@ -588,17 +519,16 @@ async function api(req, res, p) {
     });
   }
 
-  /* -------------------------------------------------------
-     INVENTORY
-     ------------------------------------------------------- */
+  /* -------------------------
+     ADMIN INVENTORY
+  ------------------------- */
 
   if (
     req.method === 'PUT' &&
     p === '/api/admin/inventory'
   ) {
 
-    const data =
-      await body(req);
+    const data = await body(req);
 
     write(
       'inventory.json',
@@ -610,17 +540,16 @@ async function api(req, res, p) {
     });
   }
 
-  /* -------------------------------------------------------
-     COUPONS
-     ------------------------------------------------------- */
+  /* -------------------------
+     ADMIN COUPONS
+  ------------------------- */
 
   if (
     req.method === 'PUT' &&
     p === '/api/admin/coupons'
   ) {
 
-    const data =
-      await body(req);
+    const data = await body(req);
 
     write(
       'coupons.json',
@@ -632,108 +561,87 @@ async function api(req, res, p) {
     });
   }
 
-  /* -------------------------------------------------------
-     ORDER / BOOKING STATUS
-     ------------------------------------------------------- */
+  /* -------------------------
+     ADMIN ORDERS / BOOKINGS
+  ------------------------- */
 
-  const statusMatch =
+  let m =
     p.match(
       /^\/api\/admin\/(orders|bookings)\/([^/]+)$/
     );
 
   if (
-    statusMatch &&
+    m &&
     req.method === 'PUT'
   ) {
 
-    const type =
-      statusMatch[1];
-
-    const id =
-      statusMatch[2];
-
     const file =
-      type === 'orders'
+      m[1] === 'orders'
         ? 'orders.json'
         : 'bookings.json';
 
-    const items =
-      read(file);
+    const a = read(file);
 
-    const index =
-      items.findIndex(
-        x => x.id === id
+    const i =
+      a.findIndex(
+        x => x.id === m[2]
       );
 
-    if (index < 0) {
+    if (i < 0) {
+
       return send(res, 404, {
         error: 'Not found'
       });
     }
 
-    const update =
-      await body(req);
-
-    items[index] = {
-      ...items[index],
-      ...update
+    a[i] = {
+      ...a[i],
+      ...(await body(req))
     };
 
-    write(
-      file,
-      items
-    );
+    write(file, a);
 
     return send(res, 200, {
       ok: true
     });
   }
 
-  /* -------------------------------------------------------
+  /* -------------------------
      DELETE REVIEW
-     ------------------------------------------------------- */
+  ------------------------- */
 
-  const reviewMatch =
+  m =
     p.match(
       /^\/api\/admin\/reviews\/([^/]+)$/
     );
 
   if (
-    reviewMatch &&
+    m &&
     req.method === 'DELETE'
   ) {
 
-    const id =
-      reviewMatch[1];
-
-    const reviews =
-      read('reviews.json')
-        .filter(
-          x => x.id !== id
-        );
-
     write(
       'reviews.json',
-      reviews
+
+      read('reviews.json')
+        .filter(
+          x => x.id !== m[1]
+        )
     );
 
     return send(res, 200, {
       ok: true
     });
   }
-
-  /* -------------------------------------------------------
-     UNKNOWN API
-     ------------------------------------------------------- */
 
   return send(res, 404, {
     error: 'API route not found'
   });
 }
 
-/* =========================================================
-   STATIC FILE SERVER
-   ========================================================= */
+/* =========================
+   WEB SERVER
+========================= */
 
 const server =
   http.createServer(
@@ -741,7 +649,7 @@ const server =
 
       try {
 
-        const pathname =
+        const p =
           url.parse(
             req.url
           ).pathname;
@@ -749,37 +657,38 @@ const server =
         /* API */
 
         if (
-          pathname.startsWith('/api/')
+          p.startsWith('/api/')
         ) {
+
           return await api(
             req,
             res,
-            pathname
+            p
           );
         }
 
-        /* -------------------------------------------------
-           ROOT / PUBLIC WEBSITE
-           ------------------------------------------------- */
+        /* STATIC FILES */
 
         let file;
 
-        if (pathname === '/') {
+        if (p === '/') {
 
           file =
             path.join(
-              PUBLIC,
+              ROOT,
+              'public',
               'index.html'
             );
 
         } else if (
-          pathname === '/admin' ||
-          pathname === '/admin/'
+          p === '/admin' ||
+          p === '/admin/'
         ) {
 
           file =
             path.join(
-              PUBLIC,
+              ROOT,
+              'public',
               'admin',
               'index.html'
             );
@@ -788,23 +697,24 @@ const server =
 
           file =
             path.join(
-              PUBLIC,
-              decodeURIComponent(pathname)
+              ROOT,
+              'public',
+              decodeURIComponent(p)
             );
         }
 
-        /* SECURITY */
-
         const publicRoot =
-          path.resolve(PUBLIC);
+          path.join(
+            ROOT,
+            'public'
+          );
 
-        const requested =
-          path.resolve(file);
+        const normalized =
+          path.normalize(file);
 
         if (
-          requested !== publicRoot &&
-          !requested.startsWith(
-            publicRoot + path.sep
+          !normalized.startsWith(
+            publicRoot
           )
         ) {
 
@@ -813,49 +723,18 @@ const server =
           });
         }
 
-        /* -------------------------------------------------
-           FILE NOT FOUND
-           ------------------------------------------------- */
-
         if (
           !fs.existsSync(file) ||
           fs.statSync(file).isDirectory()
         ) {
 
-          /*
-            Do NOT send index.html for missing images.
-            This is important because missing image URLs
-            should return 404 instead of HTML.
-          */
-
-          const ext =
-            path.extname(file)
-              .toLowerCase();
-
-          if (
-            ext === '.png' ||
-            ext === '.jpg' ||
-            ext === '.jpeg' ||
-            ext === '.webp' ||
-            ext === '.gif' ||
-            ext === '.svg'
-          ) {
-
-            return send(res, 404, {
-              error: 'Image not found'
-            });
-          }
-
           file =
             path.join(
-              PUBLIC,
+              ROOT,
+              'public',
               'index.html'
             );
         }
-
-        /* -------------------------------------------------
-           SERVE FILE
-           ------------------------------------------------- */
 
         const ext =
           path.extname(file)
@@ -864,43 +743,31 @@ const server =
         res.writeHead(200, {
           'Content-Type':
             mime[ext] ||
-            'application/octet-stream'
+            'application/octet-stream',
+          'Cache-Control':
+            'no-cache'
         });
 
-        fs.createReadStream(file)
-          .pipe(res);
+        fs.createReadStream(
+          file
+        ).pipe(res);
 
       } catch (e) {
 
-        console.error(
-          'Server error:',
-          e
-        );
+        console.error(e);
 
-        if (!res.headersSent) {
-          send(res, 500, {
-            error: 'Server error'
-          });
-        } else {
-          res.end();
-        }
+        send(res, 500, {
+          error: 'Server error'
+        });
       }
     }
   );
-
-/* =========================================================
-   START SERVER
-   ========================================================= */
 
 server.listen(
   PORT,
   () => {
     console.log(
       `WASABEE running at http://localhost:${PORT}`
-    );
-
-    console.log(
-      `Uploads directory: ${UPLOADS}`
     );
   }
 );
