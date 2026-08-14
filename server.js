@@ -7,7 +7,7 @@ const url = require('url');
 const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
 const DATA = path.join(ROOT, 'data');
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'wasabee-admin');
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Debraj@30';
 
 if (!fs.existsSync(DATA)) {
   fs.mkdirSync(DATA, { recursive: true });
