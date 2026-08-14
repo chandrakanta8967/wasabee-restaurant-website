@@ -52,7 +52,6 @@ async function api(req,res,p){
      return send(res,400,{error:e.message||'Upload failed'});
    }
  }
- if(req.method==='POST'&&p==='/api/admin/upload'){
   if(!authed(req))return send(res,401,{error:'Unauthorized'});
 
   try{
