@@ -52,6 +52,50 @@ async function api(req,res,p){
      return send(res,400,{error:e.message||'Upload failed'});
    }
  }
+  if(req.method==='POST'&&p==='/api/admin/upload'){
+  if(!authed(req))return send(res,401,{error:'Unauthorized'});
+
+  try{
+    const b=await body(req);
+
+    if(!b.filename||!b.data){
+      return send(res,400,{ok:false,error:'Filename or image data missing'});
+    }
+
+    const ext=path.extname(b.filename).toLowerCase();
+    const allowed=['.jpg','.jpeg','.png','.webp','.gif','.svg'];
+
+    if(!allowed.includes(ext)){
+      return send(res,400,{ok:false,error:'Unsupported image type'});
+    }
+
+    const uploadsDir=path.join(ROOT,'public','uploads');
+
+    if(!fs.existsSync(uploadsDir)){
+      fs.mkdirSync(uploadsDir,{recursive:true});
+    }
+
+    const safeName=Date.now()+'-'+
+      path.basename(b.filename).replace(/[^a-zA-Z0-9._-]/g,'_');
+
+    const filePath=path.join(uploadsDir,safeName);
+
+    const base64=String(b.data).replace(/^data:image\/[^;]+;base64,/,'');
+    fs.writeFileSync(filePath,Buffer.from(base64,'base64'));
+
+    return send(res,200,{
+      ok:true,
+      url:'/uploads/'+safeName
+    });
+
+  }catch(err){
+    console.error('Image upload error:',err);
+    return send(res,500,{
+      ok:false,
+      error:'Image upload failed'
+    });
+  }
+}
  if(req.method==='GET'&&p==='/api/public-data')return send(res,200,{menu:read('menu.json'),settings:read('settings.json'),reviews:read('reviews.json').filter(x=>x.approved!==false).slice(-30).reverse(),coupons:read('coupons.json').filter(x=>x.active!==false)});
  if(req.method==='POST'&&p==='/api/orders'){const b=await body(req),a=read('orders.json'),o={id:'WAS-'+Date.now(),createdAt:new Date().toISOString(),status:'NEW',...b};a.push(o);write('orders.json',a);return send(res,200,{ok:true,orderId:o.id})}
  if(req.method==='POST'&&p==='/api/bookings'){const b=await body(req),a=read('bookings.json'),o={id:'TB-'+Date.now(),createdAt:new Date().toISOString(),status:'NEW',...b};a.push(o);write('bookings.json',a);return send(res,200,{ok:true,id:o.id})}
