@@ -8,7 +8,50 @@ function send(res,status,data,type='application/json'){res.writeHead(status,{'Co
 function body(req){return new Promise((resolve,reject)=>{let b='';req.on('data',c=>{b+=c;if(b.length>5e6)req.destroy()});req.on('end',()=>{try{resolve(b?JSON.parse(b):{})}catch(e){reject(e)}});req.on('error',reject)})}
 function authed(req){const h=req.headers.authorization||'';return h.startsWith('Bearer ')&&sessions.has(h.slice(7))}
 function allItems(menu){const out=[];for(const c of menu){if(c.items)for(const i of c.items)out.push({...i,category:c.name});if(c.subcategories)for(const s of c.subcategories)for(const i of (s.items||[]))out.push({...i,category:c.name,subcategory:s.name});}return out}
+function saveUploadedImage(filename,data){
+  const uploadDir=path.join(ROOT,'public','uploads');
+  if(!fs.existsSync(uploadDir))fs.mkdirSync(uploadDir,{recursive:true});
+
+  const ext=path.extname(filename||'').toLowerCase();
+  const allowed=['.jpg','.jpeg','.png','.webp','.gif'];
+
+  if(!allowed.includes(ext))throw new Error('Only JPG, JPEG, PNG, WEBP and GIF images are allowed');
+
+  const safeName=path.basename(filename,ext)
+    .replace(/[^a-z0-9-_]/gi,'-')
+    .toLowerCase();
+
+  const finalName=Date.now()+'-'+safeName+ext;
+  const filePath=path.join(uploadDir,finalName);
+
+  fs.writeFileSync(filePath,Buffer.from(data,'base64'));
+
+  return '/uploads/'+finalName;
+}
 async function api(req,res,p){
+  if(req.method==='POST'&&p==='/api/admin/upload'){
+   if(!authed(req))return send(res,401,{error:'Unauthorized'});
+   try{
+     const b=await body(req);
+     if(!b.filename||!b.data)return send(res,400,{error:'Image file is required'});
+
+     const uploadDir=path.join(ROOT,'public','uploads');
+     if(!fs.existsSync(uploadDir))fs.mkdirSync(uploadDir,{recursive:true});
+
+     const ext=path.extname(b.filename).toLowerCase();
+     const allowed=['.jpg','.jpeg','.png','.webp','.gif'];
+     if(!allowed.includes(ext))return send(res,400,{error:'Invalid image type'});
+
+     const safeName=path.basename(b.filename,ext).replace(/[^a-z0-9-_]/gi,'-').toLowerCase();
+     const finalName=Date.now()+'-'+safeName+ext;
+     const base64=String(b.data).replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/,'');
+     fs.writeFileSync(path.join(uploadDir,finalName),Buffer.from(base64,'base64'));
+
+     return send(res,200,{ok:true,url:'/uploads/'+finalName});
+   }catch(e){
+     return send(res,400,{error:e.message||'Upload failed'});
+   }
+ }
  if(req.method==='GET'&&p==='/api/public-data')return send(res,200,{menu:read('menu.json'),settings:read('settings.json'),reviews:read('reviews.json').filter(x=>x.approved!==false).slice(-30).reverse(),coupons:read('coupons.json').filter(x=>x.active!==false)});
  if(req.method==='POST'&&p==='/api/orders'){const b=await body(req),a=read('orders.json'),o={id:'WAS-'+Date.now(),createdAt:new Date().toISOString(),status:'NEW',...b};a.push(o);write('orders.json',a);return send(res,200,{ok:true,orderId:o.id})}
  if(req.method==='POST'&&p==='/api/bookings'){const b=await body(req),a=read('bookings.json'),o={id:'TB-'+Date.now(),createdAt:new Date().toISOString(),status:'NEW',...b};a.push(o);write('bookings.json',a);return send(res,200,{ok:true,id:o.id})}
