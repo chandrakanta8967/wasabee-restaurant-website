@@ -233,409 +233,334 @@ function saveUploadedImage(filename, data) {
    API
 ========================= */
 
-async function api(req, res, p) {
+async function api(req,res,p){
 
-  /* -------------------------
-     PUBLIC DATA
-  ------------------------- */
-
-  if (
-    req.method === 'GET' &&
-    p === '/api/public-data'
-  ) {
-
-    return send(res, 200, {
-      menu: read('menu.json'),
-
-      settings:
-        read('settings.json'),
-
-      reviews:
-        read('reviews.json')
-          .filter(x => x.approved !== false)
-          .slice(-30)
-          .reverse(),
-
-      coupons:
-        read('coupons.json')
-          .filter(x => x.active !== false)
-    });
-  }
-
-  /* -------------------------
-     ORDERS
-  ------------------------- */
-
-  if (
-    req.method === 'POST' &&
-    p === '/api/orders'
-  ) {
-
-    const b = await body(req);
-    const a = read('orders.json');
-
-    const o = {
-      id: 'WAS-' + Date.now(),
-      createdAt: new Date().toISOString(),
-      status: 'NEW',
-      ...b
-    };
-
-    a.push(o);
-
-    write('orders.json', a);
-
-    return send(res, 200, {
-      ok: true,
-      orderId: o.id
-    });
-  }
-
-  /* -------------------------
-     BOOKINGS
-  ------------------------- */
-
-  if (
-    req.method === 'POST' &&
-    p === '/api/bookings'
-  ) {
-
-    const b = await body(req);
-    const a = read('bookings.json');
-
-    const o = {
-      id: 'TB-' + Date.now(),
-      createdAt: new Date().toISOString(),
-      status: 'NEW',
-      ...b
-    };
-
-    a.push(o);
-
-    write('bookings.json', a);
-
-    return send(res, 200, {
-      ok: true,
-      id: o.id
-    });
-  }
-
-  /* -------------------------
-     REVIEWS
-  ------------------------- */
-
-  if (
-    req.method === 'POST' &&
-    p === '/api/reviews'
-  ) {
-
-    const b = await body(req);
-    const a = read('reviews.json');
-
-    const o = {
-      id: 'RV-' + Date.now(),
-      createdAt: new Date().toISOString(),
-      approved: true,
-      ...b
-    };
-
-    a.push(o);
-
-    write('reviews.json', a);
-
-    return send(res, 200, {
-      ok: true
-    });
-  }
-
-  /* -------------------------
-     ADMIN LOGIN
-  ------------------------- */
-
-  if (
-    req.method === 'POST' &&
-    p === '/api/admin/login'
-  ) {
-
-    const b = await body(req);
-
-    if (
-      b.password !== ADMIN_PASSWORD
-    ) {
-
-      return send(res, 401, {
-        error: 'Wrong password'
-      });
+  // =========================
+  // ADMIN IMAGE UPLOAD
+  // =========================
+  if(req.method==='POST' && p==='/api/admin/upload'){
+    if(!authed(req)){
+      return send(res,401,{error:'Unauthorized'});
     }
 
-    return send(res, 200, {
-      token: makeAdminToken()
-    });
-  }
+    try{
+      const b=await body(req);
 
-  /* -------------------------
-     ADMIN AUTH CHECK
-  ------------------------- */
-
-  if (
-    p.startsWith('/api/admin/')
-  ) {
-
-    if (!authed(req)) {
-
-      return send(res, 401, {
-        error: 'Unauthorized'
-      });
-    }
-  }
-
-  /* -------------------------
-     ADMIN DATA
-  ------------------------- */
-
-  if (
-    req.method === 'GET' &&
-    p === '/api/admin/data'
-  ) {
-
-    return send(res, 200, {
-
-      menu:
-        read('menu.json'),
-
-      settings:
-        read('settings.json'),
-
-      orders:
-        read('orders.json')
-          .slice()
-          .reverse(),
-
-      bookings:
-        read('bookings.json')
-          .slice()
-          .reverse(),
-
-      reviews:
-        read('reviews.json')
-          .slice()
-          .reverse(),
-
-      inventory:
-        read('inventory.json'),
-
-      coupons:
-        read('coupons.json')
-    });
-  }
-
-  /* -------------------------
-     ADMIN IMAGE UPLOAD
-  ------------------------- */
-
-  if (
-    req.method === 'POST' &&
-    p === '/api/admin/upload'
-  ) {
-
-    try {
-
-      const b = await body(req);
-
-      if (!b.filename || !b.data) {
-
-        return send(res, 400, {
-          ok: false,
-          error: 'Filename or image data missing'
+      if(!b.filename || !b.data){
+        return send(res,400,{
+          ok:false,
+          error:'Image file is required'
         });
       }
 
-      const imageUrl =
-        saveUploadedImage(
-          b.filename,
-          b.data
-        );
+      const ext=path.extname(b.filename).toLowerCase();
+      const allowed=[
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.webp',
+        '.gif',
+        '.svg'
+      ];
 
-      return send(res, 200, {
-        ok: true,
-        url: imageUrl
-      });
+      if(!allowed.includes(ext)){
+        return send(res,400,{
+          ok:false,
+          error:'Unsupported image type'
+        });
+      }
 
-    } catch (err) {
+      // Remove data:image/...;base64, prefix
+      const imageData=String(b.data)
+        .replace(/^data:image\/[^;]+;base64,/,'')
+        .replace(/^data:application\/svg\+xml;base64,/,'')
+        .replace(/\s/g,'');
 
-      console.error(
-        'Image upload error:',
-        err
+      // Cloudinary settings from Render Environment Variables
+      const cloudName=process.env.CLOUDINARY_CLOUD_NAME;
+      const apiKey=process.env.CLOUDINARY_API_KEY;
+      const apiSecret=process.env.CLOUDINARY_API_SECRET;
+
+      if(!cloudName || !apiKey || !apiSecret){
+        return send(res,500,{
+          ok:false,
+          error:'Cloudinary environment variables are missing'
+        });
+      }
+
+      const timestamp=Math.floor(Date.now()/1000);
+
+      const folder='wasabee/menu';
+
+      // Cloudinary signature
+      const signatureBase=
+        `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
+
+      const signature=crypto
+        .createHash('sha1')
+        .update(signatureBase)
+        .digest('hex');
+
+      const uploadUrl=
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+
+      const form=new URLSearchParams();
+
+      form.append(
+        'file',
+        `data:image/${ext.replace('.','')};base64,${imageData}`
       );
 
-      return send(res, 400, {
-        ok: false,
-        error:
-          err.message ||
-          'Image upload failed'
+      form.append('api_key',apiKey);
+      form.append('timestamp',String(timestamp));
+      form.append('folder',folder);
+      form.append('signature',signature);
+
+      const cloudinaryResponse=await fetch(uploadUrl,{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/x-www-form-urlencoded'
+        },
+        body:form.toString()
+      });
+
+      const result=await cloudinaryResponse.json();
+
+      if(!cloudinaryResponse.ok){
+        console.error('Cloudinary upload failed:',result);
+
+        return send(res,500,{
+          ok:false,
+          error:result?.error?.message || 'Cloudinary upload failed'
+        });
+      }
+
+      console.log('Cloudinary image uploaded:',result.secure_url);
+
+      return send(res,200,{
+        ok:true,
+        url:result.secure_url,
+        public_id:result.public_id
+      });
+
+    }catch(err){
+
+      console.error('Image upload error:',err);
+
+      return send(res,500,{
+        ok:false,
+        error:err.message || 'Image upload failed'
       });
     }
   }
 
-  /* -------------------------
-     ADMIN MENU
-  ------------------------- */
-
-  if (
-    req.method === 'PUT' &&
-    p === '/api/admin/menu'
-  ) {
-
-    const data = await body(req);
-
-    write(
-      'menu.json',
-      data
-    );
-
-    return send(res, 200, {
-      ok: true
+  // =========================
+  // PUBLIC DATA
+  // =========================
+  if(req.method==='GET' && p==='/api/public-data'){
+    return send(res,200,{
+      menu:read('menu.json'),
+      settings:read('settings.json'),
+      reviews:read('reviews.json')
+        .filter(x=>x.approved!==false)
+        .slice(-30)
+        .reverse(),
+      coupons:read('coupons.json')
+        .filter(x=>x.active!==false)
     });
   }
 
-  /* -------------------------
-     ADMIN SETTINGS
-  ------------------------- */
+  // =========================
+  // ORDERS
+  // =========================
+  if(req.method==='POST' && p==='/api/orders'){
+    const b=await body(req);
+    const a=read('orders.json');
 
-  if (
-    req.method === 'PUT' &&
-    p === '/api/admin/settings'
-  ) {
+    const o={
+      id:'WAS-'+Date.now(),
+      createdAt:new Date().toISOString(),
+      status:'NEW',
+      ...b
+    };
 
-    const data = await body(req);
+    a.push(o);
+    write('orders.json',a);
 
-    write(
-      'settings.json',
-      data
-    );
-
-    return send(res, 200, {
-      ok: true
+    return send(res,200,{
+      ok:true,
+      orderId:o.id
     });
   }
 
-  /* -------------------------
-     ADMIN INVENTORY
-  ------------------------- */
+  // =========================
+  // BOOKINGS
+  // =========================
+  if(req.method==='POST' && p==='/api/bookings'){
+    const b=await body(req);
+    const a=read('bookings.json');
 
-  if (
-    req.method === 'PUT' &&
-    p === '/api/admin/inventory'
-  ) {
+    const o={
+      id:'TB-'+Date.now(),
+      createdAt:new Date().toISOString(),
+      status:'NEW',
+      ...b
+    };
 
-    const data = await body(req);
+    a.push(o);
+    write('bookings.json',a);
 
-    write(
-      'inventory.json',
-      data
-    );
-
-    return send(res, 200, {
-      ok: true
+    return send(res,200,{
+      ok:true,
+      id:o.id
     });
   }
 
-  /* -------------------------
-     ADMIN COUPONS
-  ------------------------- */
+  // =========================
+  // REVIEWS
+  // =========================
+  if(req.method==='POST' && p==='/api/reviews'){
+    const b=await body(req);
+    const a=read('reviews.json');
 
-  if (
-    req.method === 'PUT' &&
-    p === '/api/admin/coupons'
-  ) {
+    const o={
+      id:'RV-'+Date.now(),
+      createdAt:new Date().toISOString(),
+      approved:true,
+      ...b
+    };
 
-    const data = await body(req);
+    a.push(o);
+    write('reviews.json',a);
 
-    write(
-      'coupons.json',
-      data
-    );
+    return send(res,200,{ok:true});
+  }
 
-    return send(res, 200, {
-      ok: true
+  // =========================
+  // ADMIN LOGIN
+  // =========================
+  if(req.method==='POST' && p==='/api/admin/login'){
+    const b=await body(req);
+
+    if(b.password!==ADMIN_PASSWORD){
+      return send(res,401,{
+        error:'Wrong password'
+      });
+    }
+
+    const t=crypto.randomBytes(24).toString('hex');
+
+    sessions.add(t);
+
+    return send(res,200,{
+      token:t
     });
   }
 
-  /* -------------------------
-     ADMIN ORDERS / BOOKINGS
-  ------------------------- */
+  // =========================
+  // ADMIN AUTH
+  // =========================
+  if(p.startsWith('/api/admin/') && !authed(req)){
+    return send(res,401,{
+      error:'Unauthorized'
+    });
+  }
 
-  let m =
-    p.match(
-      /^\/api\/admin\/(orders|bookings)\/([^/]+)$/
-    );
+  // =========================
+  // ADMIN DATA
+  // =========================
+  if(req.method==='GET' && p==='/api/admin/data'){
+    return send(res,200,{
+      menu:read('menu.json'),
+      settings:read('settings.json'),
+      orders:read('orders.json').slice().reverse(),
+      bookings:read('bookings.json').slice().reverse(),
+      reviews:read('reviews.json').slice().reverse(),
+      inventory:read('inventory.json'),
+      coupons:read('coupons.json')
+    });
+  }
 
-  if (
-    m &&
-    req.method === 'PUT'
-  ) {
+  // =========================
+  // MENU
+  // =========================
+  if(req.method==='PUT' && p==='/api/admin/menu'){
+    write('menu.json',await body(req));
+    return send(res,200,{ok:true});
+  }
 
-    const file =
-      m[1] === 'orders'
+  // =========================
+  // SETTINGS
+  // =========================
+  if(req.method==='PUT' && p==='/api/admin/settings'){
+    write('settings.json',await body(req));
+    return send(res,200,{ok:true});
+  }
+
+  // =========================
+  // INVENTORY
+  // =========================
+  if(req.method==='PUT' && p==='/api/admin/inventory'){
+    write('inventory.json',await body(req));
+    return send(res,200,{ok:true});
+  }
+
+  // =========================
+  // COUPONS
+  // =========================
+  if(req.method==='PUT' && p==='/api/admin/coupons'){
+    write('coupons.json',await body(req));
+    return send(res,200,{ok:true});
+  }
+
+  // =========================
+  // ORDER / BOOKING UPDATE
+  // =========================
+  let m=p.match(/^\/api\/admin\/(orders|bookings)\/([^/]+)$/);
+
+  if(m && req.method==='PUT'){
+    const file=
+      m[1]==='orders'
         ? 'orders.json'
         : 'bookings.json';
 
-    const a = read(file);
+    const a=read(file);
+    const i=a.findIndex(x=>x.id===m[2]);
 
-    const i =
-      a.findIndex(
-        x => x.id === m[2]
-      );
-
-    if (i < 0) {
-
-      return send(res, 404, {
-        error: 'Not found'
+    if(i<0){
+      return send(res,404,{
+        error:'Not found'
       });
     }
 
-    a[i] = {
+    a[i]={
       ...a[i],
       ...(await body(req))
     };
 
-    write(file, a);
+    write(file,a);
 
-    return send(res, 200, {
-      ok: true
-    });
+    return send(res,200,{ok:true});
   }
 
-  /* -------------------------
-     DELETE REVIEW
-  ------------------------- */
+  // =========================
+  // DELETE REVIEW
+  // =========================
+  m=p.match(/^\/api\/admin\/reviews\/([^/]+)$/);
 
-  m =
-    p.match(
-      /^\/api\/admin\/reviews\/([^/]+)$/
-    );
-
-  if (
-    m &&
-    req.method === 'DELETE'
-  ) {
-
+  if(m && req.method==='DELETE'){
     write(
       'reviews.json',
-
-      read('reviews.json')
-        .filter(
-          x => x.id !== m[1]
-        )
+      read('reviews.json').filter(
+        x=>x.id!==m[1]
+      )
     );
 
-    return send(res, 200, {
-      ok: true
-    });
+    return send(res,200,{ok:true});
   }
 
-  return send(res, 404, {
-    error: 'API route not found'
+  return send(res,404,{
+    error:'API route not found'
   });
 }
 
