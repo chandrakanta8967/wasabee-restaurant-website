@@ -4,454 +4,11 @@ const $=s=>document.querySelector(s);
 const $$=s=>document.querySelectorAll(s);
 
 const money=n=>(D.settings?.currency||'₹')+Number(n||0).toLocaleString('en-IN');
-
-$('#loginForm').addEventListener('submit',async e=>{
-e.preventDefault();
-
-const r=await fetch('/api/admin/login',{
-method:'POST',
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({
-password:new FormData(e.target).get('password')
-})
-});
-
-if(!r.ok)return alert('Wrong password');
-
-token=(await r.json()).token;
-
-localStorage.setItem('wasabee_admin',token);
-
-load();
-});
-
-async function api(u,o={}){
-o.headers={
-...(o.headers||{}),
-Authorization:'Bearer '+token,
-'Content-Type':'application/json'
-};
-
-const r=await fetch(u,o);
-
-if(r.status===401){
-logout();
-throw Error('Unauthorized');
-}
-
-return r.json();
-}
-
-async function load(){
-if(!token)return;
-
-try{
-D=await api('/api/admin/data');
-
-$('#login').classList.add('hidden');
-$('#app').classList.remove('hidden');
-
-renderAll();
-
-}catch(e){
-logout();
-}
-}
-
-async function refreshAll(){
-D=await api('/api/admin/data');
-renderAll();
-}
-
-function renderAll(){
-renderOverview();
-renderAnalytics();
-renderMenu();
-renderInventory();
-renderOrders();
-renderKOT();
-renderBookings();
-renderCoupons();
-renderReviews();
-renderSettings();
-}
-
-function logout(){
-localStorage.removeItem('wasabee_admin');
-token=null;
-
-$('#app').classList.add('hidden');
-$('#login').classList.remove('hidden');
-}
-
-$$('.tab').forEach(b=>b.onclick=()=>{
-$$('.tab').forEach(x=>x.classList.remove('active'));
-
-b.classList.add('active');
-
-$$('.panel').forEach(x=>x.classList.add('hidden'));
-
-$('#'+b.dataset.tab).classList.remove('hidden');
-
-$('#pageTitle').textContent=
-b.querySelector('span')?.textContent||b.textContent.trim();
-});
-
-function allItems(){
-const out=[];
-
-(D.menu||[]).forEach(c=>{
-
-(c.items||[]).forEach(i=>
-out.push({...i,category:c.name})
-);
-
-(c.subcategories||[]).forEach(s=>
-(s.items||[]).forEach(i=>
-out.push({
-...i,
-category:c.name,
-subcategory:s.name
-})
-)
-);
-
-});
-
-return out;
-}
-
-function orderRevenue(){
-return D.orders.reduce((s,o)=>s+Number(o.total||0),0);
-}
-
-function renderOverview(){
-
-const rev=D.reviews.length?
-D.reviews.reduce((s,x)=>s+Number(x.rating||0),0)/D.reviews.length:0;
-
-const pending=D.orders.filter(o=>
-['NEW','PENDING'].includes(o.status)
-).length;
-
-const today=new Date().toDateString();
-
-const todayOrders=D.orders.filter(o=>
-new Date(o.createdAt).toDateString()===today
-);
-
-const todayRev=todayOrders.reduce(
-(s,o)=>s+Number(o.total||0),0
-);
-
-$('#overview').innerHTML=`
-<div class="stats">
-
-<div class="stat">
-<span>Total Orders</span>
-<b>${D.orders.length}</b>
-</div>
-
-<div class="stat">
-<span>Today's Orders</span>
-<b>${todayOrders.length}</b>
-</div>
-
-<div class="stat">
-<span>Today's Sales</span>
-<b>${money(todayRev)}</b>
-</div>
-
-<div class="stat">
-<span>Pending Orders</span>
-<b>${pending}</b>
-</div>
-
-<div class="stat">
-<span>Rating</span>
-<b>${rev?rev.toFixed(1):'—'} ★</b>
-</div>
-
-</div>
-
-<div class="grid2">
-
-<div class="card">
-
-<div class="kpi">
-<div>
-<h3>Recent Orders</h3>
-<span class="muted">Live order control</span>
-</div>
-
-<button class="small-btn" onclick="showTab('orders')">
-View all
-</button>
-
-</div>
-
-${D.orders.slice(0,7).map(orderLine).join('')||
-'<p class="muted">No orders yet.</p>'}
-
-</div>
-
-<div class="card">
-
-<h3>Quick Actions</h3>
-
-<div class="actions">
-
-<button class="primary" onclick="showTab('menu')">
-+ Add Menu Item
-</button>
-
-<button class="small-btn" onclick="showTab('inventory')">
-Update Stock
-</button>
-
-<button class="small-btn" onclick="showTab('kot')">
-Open Kitchen KOT
-</button>
-
-<button class="small-btn" onclick="showTab('coupons')">
-Create Coupon
-</button>
-
-</div>
-
-<hr>
-
-<h4>System</h4>
-
-<p class="muted">
-Online ordering, WhatsApp, table booking and reviews are connected to this dashboard.
-</p>
-
-</div>
-
-</div>
-`;
-}
-
-function orderLine(o){
-
-return `
-<div class="item-row">
-
-<div>
-<b>${o.id}</b>
-
-<div class="desc">
-${o.customer?.name||''} · ${o.customer?.phone||''}
-</div>
-
-</div>
-
-<div>
-${money(o.total)}
-</div>
-
-<div>
-<span class="pill ${
-o.status==='COMPLETED'
-?'good'
-:o.status==='NEW'
-?'warn':''
-}">
-${o.status}
-</span>
-</div>
-
-<div class="actions">
-
-<button class="small-btn"
-onclick="setOrder('${o.id}','CONFIRMED')">
-Confirm
-</button>
-
-<button class="small-btn"
-onclick="setOrder('${o.id}','PREPARING')">
-Kitchen
-</button>
-
-<button class="small-btn"
-onclick="setOrder('${o.id}','COMPLETED')">
-Done
-</button>
-
-</div>
-
-</div>
-`;
-}
-
-function renderAnalytics(){
-
-const days=[];
-
-for(let i=6;i>=0;i--){
-
-const d=new Date();
-
-d.setHours(0,0,0,0);
-d.setDate(d.getDate()-i);
-
-const orders=D.orders.filter(o=>{
-const x=new Date(o.createdAt);
-return x.toDateString()===d.toDateString();
-});
-
-days.push({
-d,
-orders,
-rev:orders.reduce(
-(s,o)=>s+Number(o.total||0),0
-)
-});
-
-}
-
-const max=Math.max(
-1,
-...days.map(x=>x.rev)
-);
-
-const itemMap={};
-
-D.orders.forEach(o=>
-(o.items||[]).forEach(i=>{
-itemMap[i.name]=
-(itemMap[i.name]||0)+Number(i.qty||0);
-})
-);
-
-const top=Object.entries(itemMap)
-.sort((a,b)=>b[1]-a[1])
-.slice(0,8);
-
-$('#analytics').innerHTML=`
-
-<div class="toolbar">
-
-<div>
-
-<h3>Sales Analytics</h3>
-
-<p class="muted">
-Last 7 days based on orders stored by the website.
-</p>
-
-</div>
-
-<button class="small-btn"
-onclick="downloadReport()">
-↓ Export CSV
-</button>
-
-</div>
-
-<div class="stats">
-
-<div class="stat">
-<span>All-time sales</span>
-<b>${money(orderRevenue())}</b>
-</div>
-
-<div class="stat">
-<span>Average order value</span>
-<b>
-${D.orders.length?
-money(orderRevenue()/D.orders.length):
-money(0)}
-</b>
-</div>
-
-<div class="stat">
-<span>Completed</span>
-<b>
-${D.orders.filter(o=>o.status==='COMPLETED').length}
-</b>
-</div>
-
-<div class="stat">
-<span>Bookings</span>
-<b>${D.bookings.length}</b>
-</div>
-
-<div class="stat">
-<span>Menu items</span>
-<b>${allItems().length}</b>
-</div>
-
-</div>
-
-<div class="grid2">
-
-<div class="card">
-
-<h3>Daily Sales</h3>
-
-<div class="chart">
-
-${days.map(x=>`
-
-<div class="col">
-
-<div class="barv">
-
-<i style="height:${Math.max(
-4,
-x.rev/max*115
-)}px"></i>
-
-</div>
-
-<b>${money(x.rev)}</b>
-
-<small>
-${x.d.toLocaleDateString(
-'en-IN',
-{weekday:'short'}
-)}
-</small>
-
-</div>
-
-`).join('')}
-
-</div>
-
-</div>
-
-<div class="card">
-
-<h3>Best Sellers</h3>
-
-<div class="mini-list">
-
-${top.map((x,i)=>`
-
-<div>
-<span>${i+1}. ${esc(x[0])}</span>
-<b>${x[1]} sold</b>
-</div>
-
-`).join('')||
-'<span class="muted">No sales data yet.</span>'}
-
-</div>
-
-</div>
-
-</div>
-`;
-}
-
 function renderOrders(){
 
 const q=$('#orderSearch')?.value?.toLowerCase()||'';
 
-const list=D.orders.filter(o=>
+const list=(D.orders||[]).filter(o=>
 JSON.stringify(o).toLowerCase().includes(q)
 );
 
@@ -502,10 +59,12 @@ ${list.map(o=>`
 <tr>
 
 <td>
-<b>${o.id}</b>
+<b>${esc(o.id)}</b>
 <br>
 <small>
-${new Date(o.createdAt).toLocaleString()}
+${o.createdAt?
+new Date(o.createdAt).toLocaleString():
+''}
 </small>
 </td>
 
@@ -520,8 +79,10 @@ ${esc(o.customer?.address||'')}
 <br>
 
 ${o.customer?.location?
-`<a target="_blank"
-href="${o.customer.location}">
+`<a
+target="_blank"
+rel="noopener"
+href="${esc(o.customer.location)}">
 📍 Map
 </a>`:''}
 
@@ -531,8 +92,8 @@ href="${o.customer.location}">
 
 ${(o.items||[]).map(i=>
 `${esc(i.name)}
-${i.variant?'('+esc(i.variant)+')':''}
-×${i.qty}
+${i.variant?' ('+esc(i.variant)+')':''}
+×${Number(i.qty||0)}
 ${i.addons?.length?
 ' · '+esc(i.addons.join(', ')):''}`
 ).join('<br>')}
@@ -554,29 +115,33 @@ GST ${money(o.gst)}
 
 <td>
 <span class="pill">
-${o.status}
+${esc(o.status||'PENDING')}
 </span>
 </td>
 
 <td class="actions">
 
-<button class="small-btn"
-onclick="setOrder('${o.id}','CONFIRMED')">
+<button
+class="small-btn"
+onclick="setOrder('${esc(o.id)}','CONFIRMED')">
 Confirm
 </button>
 
-<button class="small-btn"
-onclick="setOrder('${o.id}','PREPARING')">
+<button
+class="small-btn"
+onclick="setOrder('${esc(o.id)}','PREPARING')">
 Preparing
 </button>
 
-<button class="small-btn"
-onclick="setOrder('${o.id}','COMPLETED')">
+<button
+class="small-btn"
+onclick="setOrder('${esc(o.id)}','COMPLETED')">
 Done
 </button>
 
-<button class="small-btn"
-onclick="printKOT('${o.id}')">
+<button
+class="small-btn"
+onclick="printKOT('${esc(o.id)}')">
 Print KOT
 </button>
 
@@ -593,13 +158,21 @@ Print KOT
 </div>
 `;
 
-$('#orderSearch').oninput=renderOrders;
+const search=$('#orderSearch');
+
+if(search){
+search.oninput=renderOrders;
 }
+
+}
+
 
 async function setOrder(id,status){
 
+try{
+
 await api(
-'/api/admin/orders/'+id,
+'/api/admin/orders/'+encodeURIComponent(id),
 {
 method:'PUT',
 body:JSON.stringify({status})
@@ -607,11 +180,24 @@ body:JSON.stringify({status})
 );
 
 await refreshAll();
+
+}catch(err){
+
+console.error(err);
+
+alert(
+'Could not update order: '+
+(err.message||'Unknown error')
+);
+
 }
+
+}
+
 
 function renderKOT(){
 
-const active=D.orders.filter(o=>
+const active=(D.orders||[]).filter(o=>
 !['COMPLETED','CANCELLED'].includes(o.status)
 );
 
@@ -629,7 +215,8 @@ Print a clean kitchen ticket for each active order.
 
 </div>
 
-<button class="small-btn"
+<button
+class="small-btn"
 onclick="printAllKOT()">
 🖨️ Print All Active
 </button>
@@ -644,10 +231,10 @@ ${active.map(o=>`
 
 <div class="kpi">
 
-<b>${o.id}</b>
+<b>${esc(o.id)}</b>
 
 <span class="pill">
-${o.status}
+${esc(o.status||'PENDING')}
 </span>
 
 </div>
@@ -667,9 +254,9 @@ ${(o.items||[]).map(i=>`
 <div>
 
 <span>
-${i.qty} ×
+${Number(i.qty||0)} ×
 ${esc(i.name)}
-${i.variant?'— '+esc(i.variant):''}
+${i.variant?' — '+esc(i.variant):''}
 </span>
 
 <b>
@@ -683,8 +270,9 @@ ${i.addons?.length?
 
 `).join('')}
 
-<button class="primary"
-onclick="printKOT('${o.id}')">
+<button
+class="primary"
+onclick="printKOT('${esc(o.id)}')">
 Print KOT
 </button>
 
@@ -698,10 +286,12 @@ Print KOT
 `;
 }
 
+
 function kotHTML(o){
 
 return `
-<div class="printable"
+<div
+class="printable"
 style="font-family:Arial;padding:30px">
 
 <h1 style="text-align:center;margin:0">
@@ -714,7 +304,7 @@ KITCHEN ORDER TICKET
 
 <hr>
 
-<h2>${o.id}</h2>
+<h2>${esc(o.id)}</h2>
 
 <p>
 <b>${esc(o.customer?.name||'Customer')}</b>
@@ -727,9 +317,9 @@ ${esc(o.customer?.phone||'')}
 ${(o.items||[]).map(i=>`
 
 <h3>
-${i.qty} ×
+${Number(i.qty||0)} ×
 ${esc(i.name)}
-${i.variant?'— '+esc(i.variant):''}
+${i.variant?' — '+esc(i.variant):''}
 </h3>
 
 ${i.addons?.length?
@@ -743,52 +333,143 @@ ${esc(i.addons.join(', '))}
 <hr>
 
 <p>
-Order status: ${o.status}
+Order status: ${esc(o.status||'PENDING')}
 </p>
 
 </div>
 `;
 }
 
+
 function printKOT(id){
 
-const o=D.orders.find(x=>x.id===id);
+const o=(D.orders||[]).find(x=>
+String(x.id)===String(id)
+);
 
-if(!o)return;
+if(!o){
+alert('Order not found');
+return;
+}
 
 const w=window.open('','_blank');
 
-w.document.write(kotHTML(o));
+if(!w){
+alert('Please allow pop-ups to print KOT.');
+return;
+}
+
+w.document.write(`
+<!doctype html>
+<html>
+<head>
+<title>WASABEE KOT - ${esc(o.id)}</title>
+
+<style>
+body{
+font-family:Arial,sans-serif;
+margin:0;
+padding:20px;
+}
+@media print{
+body{
+padding:0;
+}
+}
+</style>
+
+</head>
+
+<body>
+${kotHTML(o)}
+</body>
+
+</html>
+`);
 
 w.document.close();
-
 w.focus();
 
+setTimeout(()=>{
 w.print();
+},300);
+
 }
+
 
 function printAllKOT(){
 
-const active=D.orders.filter(o=>
+const active=(D.orders||[]).filter(o=>
 !['COMPLETED','CANCELLED'].includes(o.status)
 );
 
-const w=window.open('','_blank');
-
-w.document.write(
-active.map(kotHTML).join(
-'<div style="page-break-after:always"></div>'
-)
-);
-
-w.document.close();
-
-w.focus();
-
-w.print();
+if(!active.length){
+alert('No active orders.');
+return;
 }
 
+const w=window.open('','_blank');
+
+if(!w){
+alert('Please allow pop-ups to print KOT.');
+return;
+}
+
+w.document.write(`
+<!doctype html>
+<html>
+<head>
+<title>WASABEE - Active KOT</title>
+
+<style>
+body{
+font-family:Arial,sans-serif;
+margin:0;
+padding:20px;
+}
+
+.kot-page{
+page-break-after:always;
+}
+
+.kot-page:last-child{
+page-break-after:auto;
+}
+
+@media print{
+body{
+padding:0;
+}
+}
+</style>
+
+</head>
+
+<body>
+
+${active.map(o=>`
+<div class="kot-page">
+${kotHTML(o)}
+</div>
+`).join('')}
+
+</body>
+</html>
+`);
+
+w.document.close();
+w.focus();
+
+setTimeout(()=>{
+w.print();
+},300);
+
+}
+
+
 function renderBookings(){
+
+const bookings=D.bookings||[];
 
 $('#bookings').innerHTML=`
 
@@ -826,11 +507,11 @@ Manage reservations coming from the website.
 
 <tbody>
 
-${D.bookings.map(b=>`
+${bookings.map(b=>`
 
 <tr>
 
-<td>${b.id}</td>
+<td>${esc(b.id)}</td>
 
 <td>
 ${esc(b.name)}
@@ -838,27 +519,29 @@ ${esc(b.name)}
 ${esc(b.phone)}
 </td>
 
-<td>${b.date}</td>
+<td>${esc(b.date)}</td>
 
-<td>${b.time}</td>
+<td>${esc(b.time)}</td>
 
-<td>${b.guests}</td>
+<td>${Number(b.guests||0)}</td>
 
 <td>
 <span class="pill">
-${b.status}
+${esc(b.status||'PENDING')}
 </span>
 </td>
 
 <td class="actions">
 
-<button class="small-btn"
-onclick="setBooking('${b.id}','CONFIRMED')">
+<button
+class="small-btn"
+onclick="setBooking('${esc(b.id)}','CONFIRMED')">
 Confirm
 </button>
 
-<button class="small-btn"
-onclick="setBooking('${b.id}','COMPLETED')">
+<button
+class="small-btn"
+onclick="setBooking('${esc(b.id)}','COMPLETED')">
 Done
 </button>
 
@@ -876,10 +559,13 @@ Done
 `;
 }
 
+
 async function setBooking(id,status){
 
+try{
+
 await api(
-'/api/admin/bookings/'+id,
+'/api/admin/bookings/'+encodeURIComponent(id),
 {
 method:'PUT',
 body:JSON.stringify({status})
@@ -887,9 +573,24 @@ body:JSON.stringify({status})
 );
 
 await refreshAll();
+
+}catch(err){
+
+console.error(err);
+
+alert(
+'Could not update booking: '+
+(err.message||'Unknown error')
+);
+
 }
 
+}
+
+
 function renderReviews(){
+
+const reviews=D.reviews||[];
 
 $('#reviews').innerHTML=`
 
@@ -907,14 +608,19 @@ Moderate guest feedback shown on the public website.
 
 </div>
 
-${D.reviews.map(r=>`
+${reviews.map(r=>`
 
 <div class="review-card">
 
 <b>${esc(r.name)}</b>
 
 <span class="pill">
-${'★'.repeat(r.rating||5)}
+${'★'.repeat(
+Math.max(
+0,
+Math.min(5,Number(r.rating||5))
+)
+)}
 </span>
 
 <p>
@@ -922,37 +628,57 @@ ${esc(r.comment)}
 </p>
 
 <small>
-${new Date(r.createdAt).toLocaleString()}
+${r.createdAt?
+new Date(r.createdAt).toLocaleString():
+''}
 </small>
 
 <button
 class="small-btn danger"
-onclick="deleteReview('${r.id}')">
+onclick="deleteReview('${esc(r.id)}')">
 Delete
 </button>
 
 </div>
 
 `).join('')||
+
 '<p>No reviews yet.</p>'}
 `;
 }
+
 
 async function deleteReview(id){
 
 if(!confirm('Delete this review?'))return;
 
+try{
+
 await api(
-'/api/admin/reviews/'+id,
+'/api/admin/reviews/'+encodeURIComponent(id),
 {
 method:'DELETE'
 }
 );
 
 await refreshAll();
+
+}catch(err){
+
+console.error(err);
+
+alert(
+'Could not delete review: '+
+(err.message||'Unknown error')
+);
+
 }
 
+}
+
+
 let menuView='items';
+
 
 function renderMenu(){
 
@@ -981,12 +707,14 @@ from one place.
 <div class="toolbar-actions">
 
 ${active==='items'?
-`<button class="primary"
+`<button
+class="primary"
 onclick="addItem(0)">
 + Add Item
 </button>`:''}
 
-<button class="small-btn"
+<button
+class="small-btn"
 onclick="addCategory()">
 + Add Category
 </button>
@@ -1078,12 +806,14 @@ ${(c.items||[]).length} item(s)
 
 <div>
 
-<button class="small-btn"
+<button
+class="small-btn"
 onclick="addItem(${ci})">
 + Add Item
 </button>
 
-<button class="small-btn danger"
+<button
+class="small-btn danger"
 onclick="deleteCategory(${ci})">
 Delete Category
 </button>
@@ -1094,7 +824,7 @@ Delete Category
 
 <div class="items">
 
-${c.items?
+${Array.isArray(c.items)?
 c.items.map((x,ii)=>
 itemRow(ci,ii,x)
 ).join(''):
@@ -1105,12 +835,13 @@ itemRow(ci,ii,x)
 
 <b>${esc(sub.name)}</b>
 
-<button class="small-btn"
+<button
+class="small-btn"
 onclick="addSubItem(${ci},${si})">
 + Add Item
 </button>
 
-${sub.items.map((x,ii)=>
+${(sub.items||[]).map((x,ii)=>
 itemRow(ci,ii,x,si)
 ).join('')}
 
@@ -1127,10 +858,15 @@ itemRow(ci,ii,x,si)
 $('#menu').innerHTML=html;
 }
 
+
 function setMenuView(v){
+
 menuView=v;
+
 renderMenu();
+
 }
+
 
 function renderCategories(){
 
@@ -1157,7 +893,12 @@ ${esc(c.name)}
 </h3>
 
 <span class="muted">
-${(c.items||[]).length} item(s)
+${Array.isArray(c.items)?
+c.items.length:
+(c.subcategories||[]).reduce(
+(s,x)=>s+(x.items||[]).length,0
+)}
+ item(s)
 </span>
 
 </div>
@@ -1206,6 +947,7 @@ onclick="saveCategories()">
 `;
 }
 
+
 async function saveCategories(){
 
 (D.menu||[]).forEach((c,i)=>
@@ -1217,13 +959,15 @@ c[el.dataset.k]=el.value
 await saveMenu();
 
 alert('Categories saved');
+
 }
+
 
 function itemRow(ci,ii,x,si){
 
 const groups=(x.addonGroups||[])
 .map(id=>
-(D.settings.addonGroups||[])
+(D.settings?.addonGroups||[])
 .find(g=>g.id===id)?.name
 )
 .filter(Boolean);
@@ -1237,8 +981,12 @@ return `
 <div class="food-mini">
 
 ${x.image?
-`<img src="${esc(x.image)}" alt="">`
-:'🍽️'}
+`<img
+src="${esc(x.image)}"
+alt=""
+loading="lazy"
+>`:
+'🍽️'}
 
 </div>
 
@@ -1272,7 +1020,9 @@ Add-ons: ${esc(groups.join(', '))}
 
 ${x.variants?.length?
 `From ${money(
-Math.min(...x.variants.map(v=>v.price))
+Math.min(
+...x.variants.map(v=>Number(v.price||0))
+)
 )}`
 :
 money(x.price)}
@@ -1285,7 +1035,7 @@ money(x.price)}
 Container
 ${money(
 x.containerCharge??
-D.settings.defaultContainerCharge??
+D.settings?.defaultContainerCharge??
 0
 )}
 </small>
@@ -1326,923 +1076,6 @@ Delete
 </div>
 `;
 }
-
-
-/* =========================================================
-   EDIT MENU ITEM
-   IMAGE UPLOAD CODE FIXED
-   ========================================================= */
-
-function editItem(ci,ii,si){
-
-const x=
-si===null
-?D.menu[ci].items[ii]
-:D.menu[ci].subcategories[si].items[ii];
-
-const groups=D.settings.addonGroups||[];
-
-openEditor(`
-
-<span class="eyebrow">
-MENU ITEM
-</span>
-
-<h2>
-Edit Menu Item
-</h2>
-
-<p class="muted">
-Set the dish details below.
-Customers only see add-ons assigned to this item.
-</p>
-
-<form id="itemEdit" class="form-grid">
-
-<label>
-Item name
-
-<input
-name="name"
-value="${esc(x.name)}"
-required
->
-
-</label>
-
-<label>
-
-Single price
-
-<span class="hint">
-Use this only when there are no variants.
-</span>
-
-<input
-name="price"
-type="number"
-value="${x.price??''}"
-placeholder="e.g. 325"
->
-
-</label>
-
-<label>
-
-Container charge
-
-<input
-name="containerCharge"
-type="number"
-value="${x.containerCharge??D.settings.defaultContainerCharge??0}"
->
-
-</label>
-
-<label>
-
-Food Image
-
-<input
-type="file"
-id="foodImageFile"
-accept="image/*"
->
-
-<input
-type="hidden"
-name="image"
-value="${esc(x.image||'')}"
->
-
-<small class="hint">
-Choose image from your computer
-</small>
-
-</label>
-
-<label>
-
-Visibility
-
-<select name="active">
-
-<option
-value="true"
-${x.active!==false?'selected':''}>
-Visible / ON
-</option>
-
-<option
-value="false"
-${x.active===false?'selected':''}>
-Hidden / OFF
-</option>
-
-</select>
-
-</label>
-
-<label class="wide">
-
-Description
-
-<textarea
-name="description"
-placeholder="Short food description"
->${esc(x.description||'')}</textarea>
-
-</label>
-
-<label class="wide">
-
-Variants
-
-<span class="hint">
-One per line: Variant name | Price
-</span>
-
-<textarea
-name="variants"
-placeholder="Veg | 275&#10;Non-Veg | 325"
->${(x.variants||[])
-.map(v=>v.name+' | '+v.price)
-.join('\n')}</textarea>
-
-</label>
-
-<div class="wide addon-assignment">
-
-<div class="field-title">
-➕ Add-on Groups
-</div>
-
-<p class="muted">
-Tick the groups that customers should see for this dish.
-</p>
-
-<div class="addon-check-grid">
-
-${groups.map(g=>`
-
-<label class="addon-check">
-
-<input
-type="checkbox"
-name="addonGroup"
-value="${esc(g.id)}"
-${(x.addonGroups||[]).includes(g.id)?'checked':''}
->
-
-<span>
-
-<b>
-${esc(g.name)}
-</b>
-
-<small>
-${esc(
-g.selection==='single'
-?'Choose one'
-:'Choose multiple'
-)}
-${g.required?' · Required':''}
-</small>
-
-</span>
-
-</label>
-
-`).join('')||
-
-'<div class="empty-box">No add-on groups yet. Open <b>Add-ons</b> tab to create one.</div>'}
-
-</div>
-
-</div>
-
-<label class="wide legacy-addon">
-
-<span>
-Legacy Add-ons (optional)
-</span>
-
-<span class="hint">
-Keep this only for simple text choices.
-</span>
-
-<textarea
-name="addons"
-placeholder="One simple add-on per line"
->${(x.addons||[]).join('\n')}</textarea>
-
-</label>
-
-<button
-class="primary wide"
-type="submit">
-💾 Save Item
-</button>
-
-</form>
-`);
-
-
-/* SAVE ITEM */
-
-$('#itemEdit').onsubmit=async e=>{
-
-e.preventDefault();
-
-try{
-
-const f=new FormData(e.target);
-
-
-/* BASIC ITEM DATA */
-
-x.name=f.get('name');
-
-x.price=
-f.get('price')
-?Number(f.get('price'))
-:undefined;
-
-x.containerCharge=
-Number(f.get('containerCharge')||0);
-
-x.active=
-f.get('active')==='true';
-
-x.description=
-f.get('description');
-
-
-/* IMAGE UPLOAD */
-
-const imageFile=
-$('#foodImageFile').files[0];
-
-if(imageFile){
-
-const reader=new FileReader();
-
-const imageData=
-await new Promise((resolve,reject)=>{
-
-reader.onload=()=>{
-resolve(reader.result);
-};
-
-reader.onerror=reject;
-
-reader.readAsDataURL(imageFile);
-
-});
-
-
-const upload=
-await api(
-'/api/admin/upload',
-{
-method:'POST',
-
-body:JSON.stringify({
-
-filename:imageFile.name,
-
-data:imageData
-
-})
-}
-);
-
-
-if(!upload.ok){
-
-throw new Error(
-upload.error||
-'Image upload failed'
-);
-
-}
-
-x.image=upload.url;
-
-}else{
-
-/* KEEP OLD IMAGE */
-
-x.image=f.get('image');
-
-}
-
-
-/* VARIANTS */
-
-x.variants=
-f.get('variants')
-.split('\n')
-.map(s=>s.trim())
-.filter(Boolean)
-.map(s=>{
-
-let[a,b]=
-s.split('|')
-.map(t=>t.trim());
-
-return{
-name:a,
-price:Number(b||0)
-};
-
-});
-
-
-if(!x.variants.length){
-
-delete x.variants;
-
-}
-
-
-/* ADD-ON GROUPS */
-
-x.addonGroups=[
-
-...e.target.querySelectorAll(
-'input[name="addonGroup"]:checked'
-)
-
-].map(el=>el.value);
-
-
-/* LEGACY ADD-ONS */
-
-x.addons=
-f.get('addons')
-.split('\n')
-.map(s=>s.trim())
-.filter(Boolean);
-
-
-if(!x.addons.length){
-
-delete x.addons;
-
-}
-
-
-/* SAVE MENU */
-
-await saveMenu();
-
-closeEditor();
-
-alert('Item saved successfully');
-
-}catch(err){
-
-console.error(
-'Save item error:',
-err
-);
-
-alert(
-'Save failed: '+
-(err.message||'Unknown error')
-);
-
-}
-
-};
-
-}
-
-
-function addItem(ci,si=null){
-
-if(!D.menu[ci])ci=0;
-
-const x={
-id:'item-'+Date.now(),
-name:'New Item',
-price:0,
-description:'Add a short description',
-active:true,
-containerCharge:
-Number(D.settings.defaultContainerCharge||0)
-};
-
-if(si===null){
-
-D.menu[ci].items=
-(D.menu[ci].items||[]).concat(x);
-
-}else{
-
-D.menu[ci].subcategories[si].items.push(x);
-
-}
-
-saveMenu().then(()=>{
-
-menuView='items';
-
-renderMenu();
-
-editItem(
-ci,
-si===null
-?D.menu[ci].items.length-1
-:D.menu[ci].subcategories[si].items.length-1,
-si
-);
-
-});
-}
-
-function addSubItem(ci,si){
-
-addItem(ci,si);
-
-}
-
-async function deleteItem(ci,ii,si){
-
-if(!confirm('Delete this item?'))return;
-
-if(si===null){
-
-D.menu[ci].items.splice(ii,1);
-
-}else{
-
-D.menu[ci]
-.subcategories[si]
-.items.splice(ii,1);
-
-}
-
-await saveMenu();
-
-}
-
-async function deleteCategory(ci){
-
-if(!confirm(
-'Delete entire category and all its items?'
-))return;
-
-D.menu.splice(ci,1);
-
-await saveMenu();
-
-}
-
-function addCategory(){
-
-D.menu.push({
-id:'category-'+Date.now(),
-name:'New Category',
-icon:'🍽️',
-items:[]
-});
-
-saveMenu().then(()=>{
-
-menuView='categories';
-
-renderMenu();
-
-});
-
-}
-
-function renderAddonGroups(){
-
-const groups=D.settings.addonGroups||[];
-
-return `
-
-<div class="toolbar">
-
-<div>
-
-<span class="eyebrow">
-ADD-ON MANAGEMENT
-</span>
-
-<h3>
-Sauces & Extras
-</h3>
-
-<p class="muted">
-Create reusable add-on groups such as
-<b>Choice of Sauce</b>,
-then assign them to any menu item.
-</p>
-
-</div>
-
-<button
-class="primary"
-onclick="addAddonGroup()">
-+ Add Add-on Group
-</button>
-
-</div>
-
-<div class="helper-card">
-
-<b>Example:</b>
-
-Create
-<strong>Choice of Sauce</strong>
-→ add
-<strong>Chilli Soya, Butter Garlic, Oyster, Kung Pao</strong>
-→ open an item like
-<strong>Chicken in Choice of Sauce</strong>
-→ tick that group.
-
-The customer will see the sauce choices when ordering.
-
-</div>
-
-<div class="addon-groups">
-
-${groups.map((g,gi)=>`
-
-<div class="addon-group-card">
-
-<div class="group-head">
-
-<div>
-
-<span class="group-number">
-${gi+1}
-</span>
-
-<div>
-
-<h3>
-${esc(g.name)}
-</h3>
-
-<p class="muted">
-${esc(g.description||'No description')}
-</p>
-
-</div>
-
-</div>
-
-<div class="actions">
-
-<span class="pill ${
-g.active!==false?'good':'warn'
-}">
-
-${g.active!==false?'ACTIVE':'OFF'}
-
-</span>
-
-<button
-class="small-btn danger"
-onclick="deleteAddonGroup(${gi})">
-Delete
-</button>
-
-</div>
-
-</div>
-
-<div class="form-grid group-fields">
-
-<label>
-
-Group name
-
-<input
-data-ag="${gi}"
-data-k="name"
-value="${esc(g.name)}"
->
-
-</label>
-
-<label>
-
-Selection
-
-<select
-data-ag="${gi}"
-data-k="selection">
-
-<option
-value="single"
-${g.selection!=='multiple'?'selected':''}>
-Choose ONE
-</option>
-
-<option
-value="multiple"
-${g.selection==='multiple'?'selected':''}>
-Choose MULTIPLE
-</option>
-
-</select>
-
-</label>
-
-<label>
-
-Description
-
-<input
-data-ag="${gi}"
-data-k="description"
-value="${esc(g.description||'')}"
-placeholder="e.g. Select your preferred sauce"
->
-
-</label>
-
-<label>
-
-Required
-
-<select
-data-ag="${gi}"
-data-k="required">
-
-<option
-value="false"
-${!g.required?'selected':''}>
-Optional
-</option>
-
-<option
-value="true"
-${g.required?'selected':''}>
-Required
-</option>
-
-</select>
-
-</label>
-
-</div>
-
-<div class="option-head">
-
-<div>
-
-<b>
-Options
-</b>
-
-<span class="muted">
-${g.options?.length||0} choices
-</span>
-
-</div>
-
-<button
-class="small-btn"
-onclick="addAddonOption(${gi})">
-+ Add Option
-</button>
-
-</div>
-
-<div class="addon-options">
-
-${(g.options||[]).map((o,oi)=>`
-
-<div class="addon-option">
-
-<input
-data-ao="${gi}"
-data-oi="${oi}"
-data-k="name"
-value="${esc(o.name)}"
-placeholder="Option name"
->
-
-<input
-data-ao="${gi}"
-data-oi="${oi}"
-data-k="price"
-type="number"
-value="${o.price||0}"
-placeholder="Price"
->
-
-<select
-data-ao="${gi}"
-data-oi="${oi}"
-data-k="active">
-
-<option
-value="true"
-${o.active!==false?'selected':''}>
-ON
-</option>
-
-<option
-value="false"
-${o.active===false?'selected':''}>
-OFF
-</option>
-
-</select>
-
-<button
-class="icon-delete"
-title="Delete option"
-onclick="deleteAddonOption(${gi},${oi})">
-🗑
-</button>
-
-</div>
-
-`).join('')||
-
-'<div class="empty-box">No options yet. Click + Add Option.</div>'}
-
-</div>
-
-</div>
-
-`).join('')}
-
-</div>
-
-<div class="sticky-save">
-
-<button
-class="primary"
-onclick="saveAddonGroups()">
-💾 Save All Add-ons
-</button>
-
-</div>
-`;
-}
-
-function addAddonGroup(){
-
-D.settings.addonGroups=
-D.settings.addonGroups||[];
-
-D.settings.addonGroups.push({
-
-id:'addon-'+Date.now(),
-
-name:'New Add-on Group',
-
-description:'Add a short description',
-
-selection:'single',
-
-required:false,
-
-active:true,
-
-options:[]
-
-});
-
-renderMenu();
-
-}
-
-function deleteAddonGroup(i){
-
-if(!confirm(
-'Delete this add-on group? It will also be removed from item assignments after you save.'
-))return;
-
-const id=D.settings.addonGroups[i].id;
-
-D.settings.addonGroups.splice(i,1);
-
-(D.menu||[]).forEach(c=>
-(c.items||[]).forEach(x=>
-x.addonGroups=
-(x.addonGroups||[]).filter(v=>v!==id)
-)
-);
-
-renderMenu();
-
-}
-
-function addAddonOption(gi){
-
-D.settings.addonGroups[gi].options=
-D.settings.addonGroups[gi].options||[];
-
-D.settings.addonGroups[gi].options.push({
-
-id:'option-'+Date.now(),
-
-name:'New Option',
-
-price:0,
-
-active:true
-
-});
-
-renderMenu();
-
-}
-
-function deleteAddonOption(gi,oi){
-
-D.settings
-.addonGroups[gi]
-.options.splice(oi,1);
-
-renderMenu();
-
-}
-
-async function saveAddonGroups(){
-
-const groups=
-D.settings.addonGroups||[];
-
-groups.forEach((g,gi)=>{
-
-$$(`[data-ag="${gi}"]`)
-.forEach(el=>{
-
-const k=el.dataset.k;
-
-g[k]=
-k==='selection'
-?el.value
-:k==='required'
-?el.value==='true'
-:el.value;
-
-});
-
-(g.options||[]).forEach((o,oi)=>
-$$(`[data-ao="${gi}"][data-oi="${oi}"]`)
-.forEach(el=>{
-
-const k=el.dataset.k;
-
-o[k]=
-k==='price'
-?Number(el.value||0)
-:k==='active'
-?el.value==='true'
-:el.value;
-
-})
-);
-
-});
-
-await api(
-'/api/admin/settings',
-{
-method:'PUT',
-body:JSON.stringify(D.settings)
-}
-);
-
-D=await api('/api/admin/data');
-
-menuView='addons';
-
-renderMenu();
-
-alert('Add-ons saved successfully');
-
-}
-
-async function saveMenu(){
-
-await api(
-'/api/admin/menu',
-{
-method:'PUT',
-body:JSON.stringify(D.menu)
-}
-);
-
-D=await api('/api/admin/data');
-
-renderMenu();
-
-}
-
 function renderInventory(){
 
 const items=allItems();
@@ -2323,8 +1156,8 @@ ${esc(i.category)}
 
 <input
 class="stock-input"
-data-stock-id="${i.id}"
-value="${v.qty}"
+data-stock-id="${esc(i.id)}"
+value="${Number(v.qty||0)}"
 type="number"
 min="0"
 >
@@ -2335,8 +1168,8 @@ min="0"
 
 <input
 class="stock-input"
-data-low-id="${i.id}"
-value="${v.low}"
+data-low-id="${esc(i.id)}"
+value="${Number(v.low??5)}"
 type="number"
 min="0"
 >
@@ -2346,7 +1179,7 @@ min="0"
 <td>
 
 <select
-data-active-id="${i.id}">
+data-active-id="${esc(i.id)}">
 
 <option
 value="true"
@@ -2378,7 +1211,10 @@ Out of stock
 `;
 }
 
+
 async function saveInventory(){
+
+try{
 
 const map=new Map(
 (D.inventory||[]).map(x=>[x.id,x])
@@ -2389,15 +1225,19 @@ $$('[data-stock-id]').forEach(el=>{
 const id=el.dataset.stockId;
 
 const v=
-map.get(id)||{id};
+map.get(id)||{id:id};
 
-v.qty=Number(el.value);
+v.qty=
+Math.max(0,Number(el.value||0));
 
 v.low=
+Math.max(
+0,
 Number(
 document.querySelector(
 `[data-low-id="${CSS.escape(id)}"]`
 )?.value||5
+)
 );
 
 v.active=
@@ -2423,7 +1263,19 @@ alert('Inventory saved');
 
 renderInventory();
 
+}catch(err){
+
+console.error(err);
+
+alert(
+'Inventory save failed: '+
+(err.message||'Unknown error')
+);
+
 }
+
+}
+
 
 function renderCoupons(){
 
@@ -2489,7 +1341,7 @@ ${c.active?'ACTIVE':'OFF'}
 <input
 data-coupon="${i}"
 data-k="code"
-value="${esc(c.code)}"
+value="${esc(c.code||'')}"
 >
 
 <select
@@ -2514,14 +1366,14 @@ Flat amount
 data-coupon="${i}"
 data-k="value"
 type="number"
-value="${c.value||0}"
+value="${Number(c.value||0)}"
 >
 
 <input
 data-coupon="${i}"
 data-k="minOrder"
 type="number"
-value="${c.minOrder||0}"
+value="${Number(c.minOrder||0)}"
 >
 
 <input
@@ -2563,7 +1415,10 @@ Save Coupons
 `;
 }
 
+
 function addCoupon(){
+
+D.coupons=D.coupons||[];
 
 D.coupons.push({
 
@@ -2587,7 +1442,12 @@ renderCoupons();
 
 }
 
+
 async function saveCoupons(){
+
+try{
+
+D.coupons=D.coupons||[];
 
 D.coupons.forEach((c,i)=>
 
@@ -2598,7 +1458,7 @@ const k=el.dataset.k;
 
 c[k]=
 k==='value'||k==='minOrder'
-?Number(el.value)
+?Number(el.value||0)
 :k==='active'
 ?el.value==='true'
 :el.value;
@@ -2616,11 +1476,25 @@ body:JSON.stringify(D.coupons)
 
 alert('Coupons saved');
 
+}catch(err){
+
+console.error(err);
+
+alert(
+'Coupon save failed: '+
+(err.message||'Unknown error')
+);
+
 }
+
+}
+
 
 function renderSettings(){
 
-const s=D.settings;
+const s=D.settings||{};
+
+s.heroBanners=s.heroBanners||[];
 
 $('#settings').innerHTML=`
 
@@ -2634,55 +1508,55 @@ class="form-grid">
 
 <input
 name="restaurantName"
-value="${esc(s.restaurantName)}"
+value="${esc(s.restaurantName||'')}"
 placeholder="Restaurant name"
 >
 
 <input
 name="phone"
-value="${esc(s.phone)}"
+value="${esc(s.phone||'')}"
 placeholder="Phone"
 >
 
 <input
 name="whatsappNumber"
-value="${esc(s.whatsappNumber)}"
+value="${esc(s.whatsappNumber||'')}"
 placeholder="WhatsApp number with country code"
 >
 
 <input
 name="address"
-value="${esc(s.address)}"
+value="${esc(s.address||'')}"
 placeholder="Address"
 >
 
 <input
 name="gstPercent"
 type="number"
-value="${s.gstPercent}"
+value="${Number(s.gstPercent||0)}"
 >
 
 <input
 name="discountPercent"
 type="number"
-value="${s.discountPercent}"
+value="${Number(s.discountPercent||0)}"
 >
 
 <input
 name="defaultContainerCharge"
 type="number"
-value="${s.defaultContainerCharge}"
+value="${Number(s.defaultContainerCharge||0)}"
 >
 
 <input
 name="currency"
-value="${esc(s.currency)}"
+value="${esc(s.currency||'₹')}"
 >
 
 <textarea
 name="tagline"
 class="wide"
->${esc(s.tagline)}</textarea>
+>${esc(s.tagline||'')}</textarea>
 
 <div class="wide">
 
@@ -2690,7 +1564,7 @@ class="wide"
 Hero Banners
 </h4>
 
-${(s.heroBanners||[]).map((b,i)=>`
+${s.heroBanners.map((b,i)=>`
 
 <div class="banner">
 
@@ -2699,20 +1573,20 @@ ${(s.heroBanners||[]).map((b,i)=>`
 <input
 data-banner="${i}"
 data-k="title"
-value="${esc(b.title)}"
+value="${esc(b.title||'')}"
 >
 
 <input
 data-banner="${i}"
 data-k="subtitle"
-value="${esc(b.subtitle)}"
+value="${esc(b.subtitle||'')}"
 >
 
 <input
 data-banner="${i}"
 data-k="image"
 class="wide"
-value="${esc(b.image)}"
+value="${esc(b.image||'')}"
 >
 
 </div>
@@ -2731,6 +1605,7 @@ onclick="addBanner()">
 </div>
 
 <button
+type="submit"
 class="primary wide">
 Save All Settings
 </button>
@@ -2741,6 +1616,8 @@ Save All Settings
 $('#settingsForm').onsubmit=async e=>{
 
 e.preventDefault();
+
+try{
 
 const f=new FormData(e.target);
 
@@ -2756,18 +1633,29 @@ s[k]=
 'discountPercent',
 'defaultContainerCharge'
 ].includes(k)
-?Number(f.get(k))
+?Number(f.get(k)||0)
 :f.get(k);
 
 }
 
 });
 
-$$('[data-banner]').forEach(el=>
-s.heroBanners[
-Number(el.dataset.banner)
-][el.dataset.k]=el.value
-);
+$$('[data-banner]').forEach(el=>{
+
+const index=
+Number(el.dataset.banner);
+
+if(!s.heroBanners[index]){
+s.heroBanners[index]={
+title:'',
+subtitle:'',
+image:''
+};
+}
+
+s.heroBanners[index][el.dataset.k]=el.value;
+
+});
 
 await api(
 '/api/admin/settings',
@@ -2783,11 +1671,28 @@ renderSettings();
 
 alert('Settings saved');
 
+}catch(err){
+
+console.error(err);
+
+alert(
+'Settings save failed: '+
+(err.message||'Unknown error')
+);
+
+}
+
 };
 
 }
 
+
 function addBanner(){
+
+D.settings=D.settings||{};
+
+D.settings.heroBanners=
+D.settings.heroBanners||[];
 
 D.settings.heroBanners.push({
 
@@ -2803,6 +1708,7 @@ renderSettings();
 
 }
 
+
 function showTab(id){
 
 const b=
@@ -2810,9 +1716,10 @@ document.querySelector(
 `.tab[data-tab="${id}"]`
 );
 
-b?.click();
+if(b)b.click();
 
 }
+
 
 function openEditor(html){
 
@@ -2822,11 +1729,13 @@ $('#editor').classList.add('show');
 
 }
 
+
 function closeEditor(){
 
 $('#editor').classList.remove('show');
 
 }
+
 
 function esc(s){
 
@@ -2834,39 +1743,75 @@ return String(s??'')
 .replaceAll('&','&amp;')
 .replaceAll('<','&lt;')
 .replaceAll('>','&gt;')
-.replaceAll('"','&quot;');
+.replaceAll('"','&quot;')
+.replaceAll("'","&#039;");
 
 }
+
+
+function csvCell(value){
+
+return `"${String(value??'')
+.replaceAll('"','""')}"`;
+
+}
+
 
 function downloadReport(){
 
 let csv=
 'Order ID,Date,Customer,Phone,Subtotal,Discount,GST,Container,Total,Status\n';
 
-D.orders.forEach(o=>{
+(D.orders||[]).forEach(o=>{
 
 csv+=
-`"${o.id}","${o.createdAt}","${o.customer?.name||''}","${o.customer?.phone||''}",${o.subtotal||0},${o.discount||0},${o.gst||0},${o.containerCharge||0},${o.total||0},"${o.status}"\n`;
+[
+o.id,
+o.createdAt,
+o.customer?.name||'',
+o.customer?.phone||'',
+o.subtotal||0,
+o.discount||0,
+o.gst||0,
+o.containerCharge||0,
+o.total||0,
+o.status||''
+]
+.map(csvCell)
+.join(',')+
+'\n';
 
 });
 
-const a=document.createElement('a');
-
-a.href=
-URL.createObjectURL(
-new Blob(
+const blob=new Blob(
 [csv],
-{type:'text/csv'}
-)
+{
+type:'text/csv;charset=utf-8;'
+}
 );
+
+const url=
+URL.createObjectURL(blob);
+
+const a=
+document.createElement('a');
+
+a.href=url;
 
 a.download=
 'wasabee-orders-report.csv';
 
+document.body.appendChild(a);
+
 a.click();
 
-URL.revokeObjectURL(a.href);
+a.remove();
+
+setTimeout(()=>{
+URL.revokeObjectURL(url);
+},1000);
 
 }
+
 
 load();
