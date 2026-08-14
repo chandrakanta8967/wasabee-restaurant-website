@@ -439,20 +439,29 @@ async function api(req,res,p){
   // ADMIN LOGIN
   // =========================
 if(req.method==='POST'&&p==='/api/admin/login'){
-  const b=await body(req);
-  const enteredPassword=String(b.password||'').trim();
+  try{
+    const b=await body(req);
+    const entered=String(b.password||'').trim();
+    const expected=String(process.env.ADMIN_PASSWORD||'wasabee-admin').trim();
 
-  if(enteredPassword!==ADMIN_PASSWORD){
-    console.log('Admin login failed');
-    return send(res,401,{error:'Wrong password'});
+    console.log('ADMIN LOGIN:', {
+      received: entered.length,
+      configured: expected.length
+    });
+
+    if(entered!==expected){
+      return send(res,401,{error:'Wrong password'});
+    }
+
+    const t=crypto.randomBytes(24).toString('hex');
+    sessions.add(t);
+
+    return send(res,200,{token:t});
+  }catch(e){
+    console.error('LOGIN ERROR:',e);
+    return send(res,500,{error:'Login error'});
   }
-
-  const t=crypto.randomBytes(24).toString('hex');
-  sessions.add(t);
-
-  return send(res,200,{token:t});
 }
-
   // =========================
   // ADMIN AUTH
   // =========================
