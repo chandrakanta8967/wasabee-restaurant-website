@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const url = require('url');
-
+const sessions = new Set();
 const PORT=process.env.PORT||3000;
 const ROOT=__dirname;
 const DATA=path.join(ROOT,'data');
