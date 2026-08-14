@@ -442,12 +442,9 @@ if(req.method==='POST'&&p==='/api/admin/login'){
   try{
     const b=await body(req);
     const entered=String(b.password||'').trim();
-    const expected=String(process.env.ADMIN_PASSWORD||'wasabee-admin').trim();
 
-    console.log('ADMIN LOGIN:', {
-      received: entered.length,
-      configured: expected.length
-    });
+    // TEMPORARY ADMIN PASSWORD
+    const expected='wasabee-admin';
 
     if(entered!==expected){
       return send(res,401,{error:'Wrong password'});
@@ -461,6 +458,7 @@ if(req.method==='POST'&&p==='/api/admin/login'){
     console.error('LOGIN ERROR:',e);
     return send(res,500,{error:'Login error'});
   }
+
 }
   // =========================
   // ADMIN AUTH
