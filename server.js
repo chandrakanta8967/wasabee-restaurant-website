@@ -8,7 +8,6 @@ const PORT=process.env.PORT||3000;
 const ROOT=__dirname;
 const DATA=path.join(ROOT,'data');
 const ADMIN_PASSWORD=String(process.env.ADMIN_PASSWORD||'wasabee-admin').trim();
-const sessions=new Set();
 if (!fs.existsSync(DATA)) {
   fs.mkdirSync(DATA, { recursive: true });
 }
