@@ -96,7 +96,7 @@ function renderHero() {
       'Oriental <em>Excellence</em>'
     );
 
-    return `
+    return 
       <div
         class="hero-slide ${i === 0 ? 'active' : ''}"
         style="background-image:url('${x.image || ''}')"
@@ -249,11 +249,17 @@ function flattenItems(cat) {
    MENU IMAGE
 ========================= */
 
-function imageFor(item) {
 
-  if (item.image) {
+function imageFor(item){
+
+  if(item.image && String(item.image).trim()){
     return item.image;
   }
+
+  return '/assets/menu-placeholder.jpg';
+}
+```
+
 
   /*
     No fake external image is used here.
@@ -270,24 +276,80 @@ function imageFor(item) {
    MENU
 ========================= */
 
-function renderMenu() {
-
-  const menuContainer = $('#menu');
-
-  if (!menuContainer) return;
-
-  const categories = Array.isArray(DATA.menu)
-    ? DATA.menu
-    : [];
-
+function renderMenu(){
   let html = '';
 
-  categories.forEach(cat => {
+  function itemCard(item){
+    if(item.active === false) return '';
 
-    const items = flattenItems(cat)
-      .filter(item => item.active !== false);
+    const base = item.variants
+      ? Math.min(...item.variants.map(v => Number(v.price || 0)))
+      : Number(item.price || 0);
 
-    if (!items.length) return;
+    const label = item.variants
+      ? `${item.variants.length} choices`
+      : money(base);
+
+    return 
+      <article class="food-card">
+
+        <div
+          class="food-img"
+          style="
+            background-image:url('${imageFor(item)}');
+            background-size:cover;
+            background-position:center;
+            background-repeat:no-repeat;
+          "
+        ></div>
+
+        <div class="food-body">
+
+          <h4>${item.name || ''}</h4>
+
+          <p>
+            ${item.description || 'Authentic oriental preparation crafted by WASABEE.'}
+          </p>
+
+          ${
+            item.variants
+              ? `<span class="variant-label">
+                  ${label} • Select before adding
+                </span>`
+              : ''
+          }
+
+          <div class="price-row">
+
+            <span class="price">
+              ${
+                item.variants
+                  ? `From ${money(base)}`
+                  : money(base)
+              }
+            </span>
+
+            <button
+              type="button"
+              class="add"
+              onclick='openItem(${JSON.stringify(item).replace(/'/g,"&#39;")})'
+            >
+              Add +
+            </button>
+
+          </div>
+
+        </div>
+
+      </article>
+    ;
+  }
+
+  DATA.menu.forEach((cat, index) => {
+
+    const items = flattenItems(cat).filter(item => item.active !== false);
+
+    if(!items.length) return;
 
     html += `
       <section
@@ -295,11 +357,11 @@ function renderMenu() {
         id="cat-${cat.id}"
       >
 
-        <div class="menu-category-head">
+        <div class="section-head menu-category-head">
 
           <div>
             <span class="eyebrow">
-              ${cat.name || ''}
+              ${cat.name || 'MENU'}
             </span>
 
             <h2>
@@ -310,16 +372,14 @@ function renderMenu() {
         </div>
 
         <div class="menu-grid">
-
-          ${items.map(item => itemCard(item)).join('')}
-
+          ${items.map(itemCard).join('')}
         </div>
 
       </section>
     `;
   });
 
-  menuContainer.innerHTML = html;
+  $('#menu').innerHTML = html;
 }
 
 
@@ -354,7 +414,7 @@ function itemCard(item) {
   const image = imageFor(item);
 
   const imageStyle = image
-    ? `
+    ? 
       background-image:url('${image}');
       background-size:cover;
       background-position:center;
@@ -425,7 +485,7 @@ function itemCard(item) {
       </div>
 
     </article>
-  `;
+  ;
 }
 
 
@@ -581,7 +641,7 @@ function openItem(item) {
 
   if (groups.length) {
 
-    addonHtml = `
+    addonHtml = 
       <div class="addon-section">
 
         <div class="addon-section-title">
@@ -591,7 +651,7 @@ function openItem(item) {
           </small>
         </div>
 
-        ${groups.map(g => `
+        ${groups.map(g => 
 
           <div class="addon-group">
 
@@ -621,7 +681,7 @@ function openItem(item) {
               ${
                 (g.options || [])
                   .filter(o => o.active !== false)
-                  .map(o => `
+                  .map(o => 
 
                     <button
                       type="button"
@@ -676,7 +736,7 @@ function openItem(item) {
 
   const legacy =
     item.addons?.length
-      ? `
+      ? 
         <div class="addon-section">
 
           <div class="addon-section-title">
@@ -688,7 +748,7 @@ function openItem(item) {
 
           <div class="addon-list">
 
-            ${item.addons.map(a => `
+            ${item.addons.map(a => 
 
               <button
                 type="button"
