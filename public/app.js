@@ -1,3 +1,9 @@
+/* =========================================================
+   WASABEE ORIENTAL CUISINE
+   PUBLIC WEBSITE APP.JS
+   Clean replacement version
+   ========================================================= */
+
 let DATA = {
   menu: [],
   settings: {},
@@ -11,46 +17,87 @@ let heroTimer = null;
 let couponDiscount = 0;
 let appliedCoupon = '';
 let customerLocation = '';
+let reviewRating = 5;
 
-const $ = (s) => document.querySelector(s);
-const $$ = (s) => document.querySelectorAll(s);
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => document.querySelectorAll(selector);
 
 
-/* =========================
+/* =========================================================
    BASIC HELPERS
-========================= */
+   ========================================================= */
 
-function money(n) {
-  return (DATA.settings.currency || '₹') +
-    Number(n || 0).toLocaleString('en-IN');
+function money(value) {
+  const currency = DATA?.settings?.currency || '₹';
+  const number = Number(value || 0);
+
+  return currency + number.toLocaleString('en-IN');
 }
 
-function toast(msg) {
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+
+function escapeAttribute(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+
+function toast(message) {
   const t = $('#toast');
-  if (!t) return;
+
+  if (!t) {
+    console.log(message);
+    return;
+  }
 
   t.className = 'toast show';
-  t.textContent = msg;
+  t.textContent = message;
 
-  setTimeout(() => {
+  clearTimeout(t._timer);
+
+  t._timer = setTimeout(() => {
     t.className = 'toast';
   }, 2400);
 }
 
 
-/* =========================
+/* =========================================================
    INITIAL LOAD
-========================= */
+   ========================================================= */
 
 async function init() {
   try {
-    const r = await fetch('/api/public-data');
+    const response = await fetch('/api/public-data', {
+      cache: 'no-store'
+    });
 
-    if (!r.ok) {
-      throw new Error('Could not load public data');
+    if (!response.ok) {
+      throw new Error(
+        `Public data request failed: ${response.status}`
+      );
     }
 
-    DATA = await r.json();
+    const data = await response.json();
+
+    DATA = {
+      menu: Array.isArray(data.menu) ? data.menu : [],
+      settings: data.settings || {},
+      reviews: Array.isArray(data.reviews) ? data.reviews : [],
+      coupons: Array.isArray(data.coupons) ? data.coupons : []
+    };
 
     renderHero();
     renderCats();
@@ -60,47 +107,68 @@ async function init() {
 
     startHero();
 
-  } catch (err) {
-    console.error('WASABEE INIT ERROR:', err);
-    toast('Website data could not be loaded.');
+  } catch (error) {
+    console.error('WASABEE INIT ERROR:', error);
+
+    toast(
+      'Website data could not be loaded. Please refresh the page.'
+    );
   }
 }
 
 
-/* =========================
+/* =========================================================
    HERO BANNER
-========================= */
+   ========================================================= */
 
 function renderHero() {
   const container = $('#heroSlides');
   const dots = $('#heroDots');
 
-  if (!container) return;
-
-  const banners = Array.isArray(DATA.settings.heroBanners)
-    ? DATA.settings.heroBanners
-    : [];
-
-  if (!banners.length) {
-    container.innerHTML = '';
-    if (dots) dots.innerHTML = '';
+  if (!container) {
     return;
   }
 
-  container.innerHTML = banners.map((x, i) => {
+  const banners = Array.isArray(DATA?.settings?.heroBanners)
+    ? DATA.settings.heroBanners
+    : [];
 
-    const title = String(
-      x.title || 'Oriental Excellence'
-    ).replace(
+  heroIndex = 0;
+
+  if (!banners.length) {
+    container.innerHTML = '';
+    
+    if (dots) {
+      dots.innerHTML = '';
+    }
+
+    return;
+  }
+
+  container.innerHTML = banners.map((banner, index) => {
+
+    const rawTitle =
+      String(banner?.title || 'Oriental Excellence');
+
+    const title = rawTitle.replace(
       'Oriental Excellence',
       'Oriental <em>Excellence</em>'
     );
 
-    return 
+    const image =
+      banner?.image
+        ? escapeAttribute(banner.image)
+        : '';
+
+    const subtitle =
+      escapeHtml(banner?.subtitle || '');
+
+    return `
       <div
-        class="hero-slide ${i === 0 ? 'active' : ''}"
-        style="background-image:url('${x.image || ''}')"
+        class="hero-slide ${index === 0 ? 'active' : ''}"
+        style="background-image:url('${image}')"
       >
+
         <div class="hero-content">
 
           <img
@@ -115,50 +183,69 @@ function renderHero() {
 
           <h1>${title}</h1>
 
-          <p>${x.subtitle || ''}</p>
+          <p>
+            ${subtitle}
+          </p>
 
           <div class="hero-actions">
-            <a class="btn purple" href="#order">
+
+            <a
+              class="btn purple"
+              href="#order"
+            >
               Order Online →
             </a>
 
-            <a class="btn ghost" href="#booking">
+            <a
+              class="btn ghost"
+              href="#booking"
+            >
               Book a Table
             </a>
+
           </div>
 
         </div>
+
       </div>
     `;
+
   }).join('');
 
   if (dots) {
-    dots.innerHTML = banners.map((_, i) => `
-      <span class="dot ${i === 0 ? 'active' : ''}"></span>
+    dots.innerHTML = banners.map((_, index) => `
+      <span
+        class="dot ${index === 0 ? 'active' : ''}"
+      ></span>
     `).join('');
   }
-
-  heroIndex = 0;
 }
+
 
 function startHero() {
   if (heroTimer) {
     clearInterval(heroTimer);
+    heroTimer = null;
   }
 
   const slides = $$('.hero-slide');
 
-  if (slides.length <= 1) return;
+  if (slides.length <= 1) {
+    return;
+  }
 
   heroTimer = setInterval(() => {
     heroNext();
   }, 5000);
 }
 
+
 function heroNext() {
   const slides = $$('.hero-slide');
 
-  if (!slides.length) return;
+  if (!slides.length) {
+    return;
+  }
 
   heroIndex =
     (heroIndex + 1) % slides.length;
@@ -166,10 +253,13 @@ function heroNext() {
   heroPaint();
 }
 
+
 function heroPrev() {
   const slides = $$('.hero-slide');
 
-  if (!slides.length) return;
+  if (!slides.length) {
+    return;
+  }
 
   heroIndex =
     (heroIndex - 1 + slides.length) % slides.length;
@@ -177,279 +267,204 @@ function heroPrev() {
   heroPaint();
 }
 
+
 function heroPaint() {
-  $$('.hero-slide').forEach((slide, i) => {
+  $$('.hero-slide').forEach((slide, index) => {
     slide.classList.toggle(
       'active',
-      i === heroIndex
+      index === heroIndex
     );
   });
 
-  $$('.dot').forEach((dot, i) => {
+  $$('.dot').forEach((dot, index) => {
     dot.classList.toggle(
       'active',
-      i === heroIndex
+      index === heroIndex
     );
   });
 }
 
 
-/* =========================
+/* =========================================================
    CATEGORY BUTTONS
-========================= */
+   ========================================================= */
 
 function renderCats() {
   const container = $('#categories');
 
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
-  const categories = Array.isArray(DATA.menu)
-    ? DATA.menu
-    : [];
+  const categories =
+    Array.isArray(DATA.menu)
+      ? DATA.menu
+      : [];
 
-  container.innerHTML = categories.map((cat, i) => `
-    <button
-      class="cat ${i === 0 ? 'active' : ''}"
-      onclick="jumpCat('${cat.id}')"
-      type="button"
-    >
-      <span class="icon">
-        ${cat.icon || ''}
-      </span>
+  container.innerHTML = categories.map((cat, index) => {
 
-      ${cat.name || ''}
-    </button>
-  `).join('');
+    const id = escapeAttribute(cat?.id || '');
+    const name = escapeHtml(cat?.name || '');
+    const icon = cat?.icon || '🍽️';
+
+    return `
+      <button
+        type="button"
+        class="cat ${index === 0 ? 'active' : ''}"
+        onclick="jumpCat('${id}')"
+      >
+        <span class="icon">
+          ${icon}
+        </span>
+
+        ${name}
+      </button>
+    `;
+
+  }).join('');
 }
 
 
-/* =========================
-   MENU DATA
-========================= */
+/* =========================================================
+   MENU DATA HELPERS
+   ========================================================= */
 
-function flattenItems(cat) {
+function flattenItems(category) {
 
-  if (Array.isArray(cat.items)) {
-    return cat.items.map(item => ({
+  if (Array.isArray(category?.items)) {
+
+    return category.items.map(item => ({
       ...item,
       sub: ''
     }));
+
   }
 
-  return (cat.subcategories || []).flatMap(sub =>
-    (sub.items || []).map(item => ({
-      ...item,
-      sub: sub.name || ''
-    }))
-  );
+  return (category?.subcategories || [])
+    .flatMap(sub => {
+
+      return (sub?.items || []).map(item => ({
+        ...item,
+        sub: sub?.name || ''
+      }));
+
+    });
 }
 
 
-/* =========================
+/* =========================================================
    MENU IMAGE
-========================= */
+   ========================================================= */
 
+function imageFor(item) {
 
-function imageFor(item){
-
-  if(item.image && String(item.image).trim()){
-    return item.image;
+  if (
+    item?.image &&
+    String(item.image).trim()
+  ) {
+    return String(item.image).trim();
   }
 
-  return '/assets/menu-placeholder.jpg';
-}
-```
+  const name =
+    encodeURIComponent(
+      item?.name || 'asian food'
+    );
 
-
-  /*
-    No fake external image is used here.
-    If an item has no image, the CSS background
-    will remain available instead of loading
-    a broken Unsplash image.
-  */
-
-  return '';
+  return `https://source.unsplash.com/600x400/?${name},asian-food`;
 }
 
 
-/* =========================
-   MENU
-========================= */
-
-function renderMenu(){
-  let html = '';
-
-  function itemCard(item){
-    if(item.active === false) return '';
-
-    const base = item.variants
-      ? Math.min(...item.variants.map(v => Number(v.price || 0)))
-      : Number(item.price || 0);
-
-    const label = item.variants
-      ? `${item.variants.length} choices`
-      : money(base);
-
-    return 
-      <article class="food-card">
-
-        <div
-          class="food-img"
-          style="
-            background-image:url('${imageFor(item)}');
-            background-size:cover;
-            background-position:center;
-            background-repeat:no-repeat;
-          "
-        ></div>
-
-        <div class="food-body">
-
-          <h4>${item.name || ''}</h4>
-
-          <p>
-            ${item.description || 'Authentic oriental preparation crafted by WASABEE.'}
-          </p>
-
-          ${
-            item.variants
-              ? `<span class="variant-label">
-                  ${label} • Select before adding
-                </span>`
-              : ''
-          }
-
-          <div class="price-row">
-
-            <span class="price">
-              ${
-                item.variants
-                  ? `From ${money(base)}`
-                  : money(base)
-              }
-            </span>
-
-            <button
-              type="button"
-              class="add"
-              onclick='openItem(${JSON.stringify(item).replace(/'/g,"&#39;")})'
-            >
-              Add +
-            </button>
-
-          </div>
-
-        </div>
-
-      </article>
-    ;
-  }
-
-  DATA.menu.forEach((cat, index) => {
-
-    const items = flattenItems(cat).filter(item => item.active !== false);
-
-    if(!items.length) return;
-
-    html += `
-      <section
-        class="menu-category"
-        id="cat-${cat.id}"
-      >
-
-        <div class="section-head menu-category-head">
-
-          <div>
-            <span class="eyebrow">
-              ${cat.name || 'MENU'}
-            </span>
-
-            <h2>
-              ${cat.name || ''}
-            </h2>
-          </div>
-
-        </div>
-
-        <div class="menu-grid">
-          ${items.map(itemCard).join('')}
-        </div>
-
-      </section>
-    `;
-  });
-
-  $('#menu').innerHTML = html;
-}
-
-
-/* =========================
-   FOOD CARD
-========================= */
+/* =========================================================
+   MENU CARD
+   ========================================================= */
 
 function itemCard(item) {
 
-  if (item.active === false) {
+  if (
+    !item ||
+    item.active === false
+  ) {
     return '';
   }
 
-  const variants = Array.isArray(item.variants)
-    ? item.variants
-    : [];
+  const variants =
+    Array.isArray(item.variants)
+      ? item.variants
+      : [];
 
-  const hasVariants = variants.length > 0;
+  const hasVariants =
+    variants.length > 0;
 
-  const base = hasVariants
-    ? Math.min(
-        ...variants.map(v =>
-          Number(v.price || 0)
-        )
-      )
-    : Number(item.price || 0);
+  let basePrice =
+    Number(item.price || 0);
+
+  if (hasVariants) {
+
+    const prices = variants
+      .map(v => Number(v?.price || 0))
+      .filter(price => !Number.isNaN(price));
+
+    if (prices.length) {
+      basePrice = Math.min(...prices);
+    }
+
+  }
 
   const label = hasVariants
     ? `${variants.length} choices`
-    : money(base);
+    : money(basePrice);
 
-  const image = imageFor(item);
+  const image =
+    escapeAttribute(imageFor(item));
 
-  const imageStyle = image
-    ? 
-      background-image:url('${image}');
-      background-size:cover;
-      background-position:center;
-    `
-    : '';
+  const itemJson =
+    JSON.stringify(item)
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, '&#39;');
+
+  const itemName =
+    escapeHtml(item.name || '');
+
+  const description =
+    escapeHtml(
+      item.description ||
+      'Authentic oriental preparation crafted by WASABEE.'
+    );
+
+  let icon = '';
+
+  const lowerName =
+    String(item.name || '').toLowerCase();
+
+  if (lowerName.includes('soup')) {
+    icon = '🍲';
+  } else if (lowerName.includes('sushi')) {
+    icon = '🍣';
+  }
 
   return `
     <article class="food-card">
 
       <div
         class="food-img"
-        style="${imageStyle}"
+        style="
+          background-image:url('${image}');
+          background-size:cover;
+          background-position:center;
+          background-repeat:no-repeat;
+        "
       >
-        <span>
-          ${
-            String(item.name || '')
-              .toLowerCase()
-              .includes('soup')
-              ? '🍲'
-              : ''
-          }
-        </span>
+        <span>${icon}</span>
       </div>
 
       <div class="food-body">
 
         <h4>
-          ${item.name || ''}
+          ${itemName}
         </h4>
 
         <p>
-          ${
-            item.description ||
-            'Authentic oriental preparation crafted by WASABEE.'
-          }
+          ${description}
         </p>
 
         ${
@@ -465,17 +480,19 @@ function itemCard(item) {
         <div class="price-row">
 
           <span class="price">
+
             ${
               hasVariants
-                ? `From ${money(base)}`
-                : money(item.price)
+                ? `From ${money(basePrice)}`
+                : money(basePrice)
             }
+
           </span>
 
           <button
-            class="add"
             type="button"
-            onclick='openItem(${JSON.stringify(item).replace(/'/g, '&#39;')})'
+            class="add"
+            onclick='openItem(${itemJson})'
           >
             Add +
           </button>
@@ -485,13 +502,168 @@ function itemCard(item) {
       </div>
 
     </article>
-  ;
+  `;
 }
 
 
-/* =========================
+/* =========================================================
+   MAIN MENU
+   IMPORTANT:
+   Keeps the original menu/grid structure.
+   ========================================================= */
+
+function renderMenu() {
+
+  const container = $('#menu');
+
+  if (!container) {
+    return;
+  }
+
+  let html = '';
+
+  const categories =
+    Array.isArray(DATA.menu)
+      ? DATA.menu
+      : [];
+
+  categories.forEach(category => {
+
+    const categoryId =
+      escapeAttribute(category?.id || '');
+
+    const categoryName =
+      escapeHtml(category?.name || 'MENU');
+
+    const categoryIcon =
+      category?.icon || '🍽️';
+
+    html += `
+      <section
+        class="menu-category"
+        id="cat-${categoryId}"
+      >
+
+        <h3>
+          ${categoryIcon}
+          ${categoryName}
+        </h3>
+    `;
+
+
+    /* -----------------------------------------
+       CATEGORY WITH SUBCATEGORIES
+       ----------------------------------------- */
+
+    if (
+      Array.isArray(category?.subcategories) &&
+      category.subcategories.length
+    ) {
+
+      category.subcategories.forEach(subcategory => {
+
+        const subName =
+          escapeHtml(
+            subcategory?.name || ''
+          );
+
+        const items =
+          Array.isArray(subcategory?.items)
+            ? subcategory.items
+            : [];
+
+        const activeItems =
+          items.filter(
+            item => item?.active !== false
+          );
+
+        if (!activeItems.length) {
+          return;
+        }
+
+        html += `
+          <div class="subcat">
+            ${subName}
+          </div>
+
+          <div class="grid">
+            ${activeItems
+              .map(item => itemCard(item))
+              .join('')}
+          </div>
+        `;
+
+      });
+
+
+    } else {
+
+      /* -----------------------------------------
+         NORMAL CATEGORY
+         ----------------------------------------- */
+
+      const items =
+        Array.isArray(category?.items)
+          ? category.items
+          : [];
+
+      const activeItems =
+        items.filter(
+          item => item?.active !== false
+        );
+
+      if (activeItems.length) {
+
+        html += `
+          <div class="grid">
+            ${activeItems
+              .map(item => itemCard(item))
+              .join('')}
+          </div>
+        `;
+
+      }
+
+    }
+
+    html += `
+      </section>
+    `;
+
+  });
+
+  container.innerHTML = html;
+
+  /*
+    Important:
+    Search can be used after the menu is rendered.
+  */
+
+  const currentSearch =
+    $('#menuSearch');
+
+  if (
+    currentSearch &&
+    currentSearch.value.trim()
+  ) {
+    searchMenu();
+  }
+}
+
+
+/* =========================================================
    MENU SEARCH
-========================= */
+   ========================================================= */
+
+function getSearchResultElement() {
+
+  return (
+    document.getElementById('menuSearchResults') ||
+    document.getElementById('menuSearchResult')
+  );
+
+}
+
 
 function openMenuSearch() {
 
@@ -501,19 +673,154 @@ function openMenuSearch() {
   const input =
     document.getElementById('menuSearch');
 
-  if (!modal || !input) {
-    console.error(
-      'menuSearchModal or menuSearch not found'
-    );
+
+  /*
+    If you already have a search modal in HTML,
+    use it.
+  */
+
+  if (modal && input) {
+
+    modal.classList.add('show');
+
+    setTimeout(() => {
+      input.focus();
+    }, 100);
+
     return;
   }
 
-  modal.classList.add('show');
 
-  setTimeout(() => {
+  /*
+    If there is no modal and search input already
+    exists in the page, focus it.
+  */
+
+  if (input) {
+
     input.focus();
-  }, 100);
+
+    try {
+      input.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    } catch (error) {
+      console.log(error);
+    }
+
+    return;
+  }
+
+
+  /*
+    Last fallback:
+    create a small search overlay dynamically.
+  */
+
+  createSearchModal();
+
 }
+
+
+function createSearchModal() {
+
+  if (
+    document.getElementById('menuSearchModal')
+  ) {
+    openMenuSearch();
+    return;
+  }
+
+  const modal =
+    document.createElement('div');
+
+  modal.id =
+    'menuSearchModal';
+
+  modal.className =
+    'modal';
+
+  modal.innerHTML = `
+    <div class="modal-card">
+
+      <button
+        type="button"
+        class="modal-close"
+        onclick="closeMenuSearch()"
+      >
+        ×
+      </button>
+
+      <span class="eyebrow">
+        WASABEE MENU
+      </span>
+
+      <h2>
+        Search Menu
+      </h2>
+
+      <div
+        class="menu-search-box"
+        style="margin-top:20px"
+      >
+
+        <input
+          type="search"
+          id="menuSearch"
+          placeholder="🔍 Search menu item..."
+          autocomplete="off"
+        >
+
+        <button
+          type="button"
+          onclick="clearMenuSearch()"
+        >
+          Clear
+        </button>
+
+      </div>
+
+      <div
+        id="menuSearchResults"
+        style="margin-top:10px"
+      ></div>
+
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const input =
+    modal.querySelector('#menuSearch');
+
+  if (input) {
+
+    input.addEventListener(
+      'input',
+      searchMenu
+    );
+
+    input.addEventListener(
+      'keydown',
+      event => {
+
+        if (event.key === 'Escape') {
+          closeMenuSearch();
+        }
+
+      }
+    );
+
+    setTimeout(() => {
+      input.focus();
+    }, 100);
+
+  }
+
+  modal.classList.add('show');
+}
+
 
 function closeMenuSearch() {
 
@@ -532,36 +839,47 @@ function closeMenuSearch() {
   }
 
   clearMenuSearch();
+
 }
+
 
 function searchMenu() {
 
   const input =
     document.getElementById('menuSearch');
 
-  const result =
-    document.getElementById('menuSearchResults');
-
-  if (!input) return;
+  if (!input) {
+    return;
+  }
 
   const query =
-    input.value.trim().toLowerCase();
+    input.value
+      .trim()
+      .toLowerCase();
 
   const cards =
     document.querySelectorAll('.food-card');
 
+  const result =
+    getSearchResultElement();
+
   let found = 0;
+
 
   cards.forEach(card => {
 
     const text =
-      card.innerText.toLowerCase();
+      card.innerText
+        .toLowerCase();
 
     if (!query) {
 
       card.style.display = '';
+      return;
 
-    } else if (text.includes(query)) {
+    }
+
+    if (text.includes(query)) {
 
       card.style.display = '';
       found++;
@@ -571,7 +889,41 @@ function searchMenu() {
       card.style.display = 'none';
 
     }
+
   });
+
+
+  /*
+    Hide empty category sections when searching.
+    This does NOT change their normal layout.
+  */
+
+  const sections =
+    document.querySelectorAll(
+      '.menu-category'
+    );
+
+  sections.forEach(section => {
+
+    if (!query) {
+
+      section.style.display = '';
+
+      return;
+    }
+
+    const visibleCards =
+      section.querySelectorAll(
+        '.food-card:not([style*="display: none"])'
+      );
+
+    section.style.display =
+      visibleCards.length
+        ? ''
+        : 'none';
+
+  });
+
 
   if (result) {
 
@@ -581,21 +933,28 @@ function searchMenu() {
 
     } else if (found) {
 
-      result.innerHTML =
-        `<p class="search-found">
-          ${found} menu item${found > 1 ? 's' : ''} found
-        </p>`;
+      result.innerHTML = `
+        <p class="search-found">
+          ${found}
+          menu item${found > 1 ? 's' : ''}
+          found
+        </p>
+      `;
 
     } else {
 
-      result.innerHTML =
-        `<p class="search-not-found">
+      result.innerHTML = `
+        <p class="search-not-found">
           No menu item found.
-        </p>`;
+        </p>
+      `;
 
     }
+
   }
+
 }
+
 
 function clearMenuSearch() {
 
@@ -612,154 +971,218 @@ function clearMenuSearch() {
       card.style.display = '';
     });
 
+
+  document
+    .querySelectorAll('.menu-category')
+    .forEach(section => {
+      section.style.display = '';
+    });
+
+
   const result =
-    document.getElementById('menuSearchResults');
+    getSearchResultElement();
 
   if (result) {
     result.innerHTML = '';
   }
+
 }
 
 
-/* =========================
+/* =========================================================
    ITEM MODAL
-========================= */
+   ========================================================= */
 
 function openItem(item) {
 
+  const modalBody =
+    $('#itemModalBody');
+
+  if (!modalBody) {
+    return;
+  }
+
+
   const groups =
-    (item.addonGroups || [])
+    (item?.addonGroups || [])
       .map(id =>
         (DATA.settings.addonGroups || [])
-          .find(g => g.id === id)
+          .find(group => group.id === id)
       )
       .filter(
-        g => g && g.active !== false
+        group =>
+          group &&
+          group.active !== false
       );
+
 
   let addonHtml = '';
 
+
   if (groups.length) {
 
-    addonHtml = 
+    addonHtml = `
       <div class="addon-section">
 
         <div class="addon-section-title">
-          <span>➕ Customize Your Order</span>
+
+          <span>
+            ➕ Customize Your Order
+          </span>
+
           <small>
             Choose options if you want
           </small>
+
         </div>
 
-        ${groups.map(g => 
+        ${groups.map(group => {
 
-          <div class="addon-group">
+          const options =
+            (group.options || [])
+              .filter(
+                option =>
+                  option.active !== false
+              );
 
-            <div class="addon-group-title">
 
-              <div>
-                <h3>${g.name}</h3>
-                <small>
-                  ${g.description || ''}
-                </small>
+          return `
+            <div class="addon-group">
+
+              <div class="addon-group-title">
+
+                <div>
+
+                  <h3>
+                    ${escapeHtml(group.name || '')}
+                  </h3>
+
+                  <small>
+                    ${escapeHtml(group.description || '')}
+                  </small>
+
+                </div>
+
+                <span class="addon-rule">
+
+                  ${
+                    group.required
+                      ? 'Required'
+                      : 'Optional'
+                  }
+
+                  ·
+
+                  ${
+                    group.selection === 'multiple'
+                      ? 'Choose multiple'
+                      : 'Choose one'
+                  }
+
+                </span>
+
               </div>
 
-              <span class="addon-rule">
-                ${g.required ? 'Required' : 'Optional'}
-                ·
+
+              <div class="addon-choice-list">
+
                 ${
-                  g.selection === 'multiple'
-                    ? 'Choose multiple'
-                    : 'Choose one'
+                  options.length
+                    ? options.map(option => {
+
+                        const mode =
+                          group.selection === 'multiple'
+                            ? 'multiple'
+                            : 'single';
+
+                        const price =
+                          Number(option.price || 0);
+
+                        return `
+                          <button
+                            type="button"
+                            class="addon-choice"
+                            data-group="${escapeAttribute(group.id)}"
+                            data-mode="${mode}"
+                            data-price="${price}"
+                            data-name="${escapeAttribute(option.name || '')}"
+                            onclick="selectAddonChoice(this)"
+                          >
+
+                            <span>
+                              ${
+                                mode === 'multiple'
+                                  ? '☐'
+                                  : '○'
+                              }
+                            </span>
+
+                            <b>
+                              ${escapeHtml(option.name || '')}
+                            </b>
+
+                            <em>
+                              ${
+                                price
+                                  ? '+' + money(price)
+                                  : 'Included'
+                              }
+                            </em>
+
+                          </button>
+                        `;
+
+                      }).join('')
+                    : `
+                      <div class="empty">
+                        No active options in this group.
+                      </div>
+                    `
                 }
-              </span>
+
+              </div>
 
             </div>
+          `;
 
-            <div class="addon-choice-list">
-
-              ${
-                (g.options || [])
-                  .filter(o => o.active !== false)
-                  .map(o => 
-
-                    <button
-                      type="button"
-                      class="addon-choice"
-                      data-group="${g.id}"
-                      data-mode="${
-                        g.selection === 'multiple'
-                          ? 'multiple'
-                          : 'single'
-                      }"
-                      data-price="${Number(o.price || 0)}"
-                      data-name="${String(o.name).replace(/"/g, '&quot;')}"
-                      onclick="selectAddonChoice(this)"
-                    >
-
-                      <span>
-                        ${
-                          g.selection === 'multiple'
-                            ? '☐'
-                            : '○'
-                        }
-                      </span>
-
-                      <b>
-                        ${o.name}
-                      </b>
-
-                      <em>
-                        ${
-                          Number(o.price || 0)
-                            ? '+' + money(o.price)
-                            : 'Included'
-                        }
-                      </em>
-
-                    </button>
-
-                  `).join('') ||
-                  '<div class="empty">No active options in this group.</div>'
-              }
-
-            </div>
-
-          </div>
-
-        `).join('')}
+        }).join('')}
 
       </div>
     `;
+
   }
 
 
   const legacy =
-    item.addons?.length
-      ? 
+    Array.isArray(item?.addons) &&
+    item.addons.length
+      ? `
         <div class="addon-section">
 
           <div class="addon-section-title">
-            <span>Choose Add-on</span>
+
+            <span>
+              Choose Add-on
+            </span>
+
             <small>
               Legacy item options
             </small>
+
           </div>
 
           <div class="addon-list">
 
-            ${item.addons.map(a => 
-
+            ${item.addons.map(addon => `
               <button
                 type="button"
                 class="addon"
-                data-name="${String(a).replace(/"/g, '&quot;')}"
+                data-name="${escapeAttribute(addon)}"
                 data-price="0"
                 onclick="this.classList.toggle('selected')"
               >
-                ${a}
+                ${escapeHtml(addon)}
               </button>
-
             `).join('')}
 
           </div>
@@ -769,28 +1192,36 @@ function openItem(item) {
       : '';
 
 
+  const variants =
+    Array.isArray(item?.variants)
+      ? item.variants
+      : [];
+
+
   const variantsHtml =
-    item.variants?.length
+    variants.length
       ? `
         <div class="variant-list">
 
-          ${item.variants.map((v, i) => `
+          ${variants.map((variant, index) => `
 
             <button
               type="button"
               class="variant ${
-                i === 0 ? 'selected' : ''
+                index === 0
+                  ? 'selected'
+                  : ''
               }"
-              data-price="${v.price}"
+              data-price="${Number(variant.price || 0)}"
               onclick="selectVariant(this)"
             >
 
               <span>
-                ${v.name}
+                ${escapeHtml(variant.name || '')}
               </span>
 
               <b>
-                ${money(v.price)}
+                ${money(variant.price)}
               </b>
 
             </button>
@@ -803,36 +1234,36 @@ function openItem(item) {
         <input
           type="hidden"
           id="singlePrice"
-          value="${item.price || 0}"
+          value="${Number(item.price || 0)}"
         >
       `;
 
 
-  const modalBody =
-    $('#itemModalBody');
-
-  if (!modalBody) return;
+  const itemJson =
+    JSON.stringify(item)
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, '&#39;');
 
 
   modalBody.innerHTML = `
 
     <span class="eyebrow">
       ${
-        item.variants?.length
+        variants.length
           ? 'CHOOSE VARIANT'
           : 'ADD TO CART'
       }
     </span>
 
     <h2>
-      ${item.name}
+      ${escapeHtml(item.name || '')}
     </h2>
 
     <p>
-      ${
+      ${escapeHtml(
         item.description ||
         'Authentic oriental preparation crafted by WASABEE.'
-      }
+      )}
     </p>
 
     ${variantsHtml}
@@ -848,105 +1279,137 @@ function openItem(item) {
     <div style="margin-top:22px">
 
       <button
-        class="btn purple full"
         type="button"
-        onclick='confirmAdd(${JSON.stringify(item).replace(/'/g, '&#39;')})'
+        class="btn purple full"
+        onclick='confirmAdd(${itemJson})'
       >
         Add to Cart
       </button>
 
     </div>
+
   `;
+
 
   $('#itemModal')?.classList.add('show');
 }
 
-function selectVariant(el) {
+
+function selectVariant(element) {
 
   $$('#itemModal .variant')
-    .forEach(x =>
-      x.classList.remove('selected')
-    );
+    .forEach(item => {
+      item.classList.remove('selected');
+    });
 
-  el.classList.add('selected');
+  element.classList.add('selected');
 }
 
-function selectAddonChoice(el) {
+
+function selectAddonChoice(element) {
 
   const mode =
-    el.dataset.mode;
+    element.dataset.mode;
+
 
   if (mode === 'single') {
 
-    $$(
-      `#itemModal .addon-choice[data-group="${CSS.escape(el.dataset.group)}"]`
-    ).forEach(x => {
+    const group =
+      element.dataset.group;
 
-      x.classList.remove('selected');
+
+    $$(
+      `#itemModal .addon-choice[data-group="${CSS.escape(group)}"]`
+    ).forEach(choice => {
+
+      choice.classList.remove('selected');
 
       const span =
-        x.querySelector('span');
+        choice.querySelector('span');
 
       if (span) {
         span.textContent = '○';
       }
+
     });
 
-    el.classList.add('selected');
+
+    element.classList.add('selected');
 
     const span =
-      el.querySelector('span');
+      element.querySelector('span');
 
     if (span) {
       span.textContent = '●';
     }
 
+
   } else {
 
-    el.classList.toggle('selected');
+    element.classList.toggle('selected');
 
     const span =
-      el.querySelector('span');
+      element.querySelector('span');
 
     if (span) {
+
       span.textContent =
-        el.classList.contains('selected')
+        element.classList.contains('selected')
           ? '☑'
           : '☐';
+
     }
+
   }
+
 }
+
 
 function closeItem() {
-  $('#itemModal')?.classList.remove('show');
+
+  $('#itemModal')
+    ?.classList.remove('show');
+
 }
 
 
-/* =========================
+/* =========================================================
    ADD TO CART
-========================= */
+   ========================================================= */
 
 function confirmAdd(item) {
 
   let variant = '';
   let price = Number(item.price || 0);
 
-  if (item.variants?.length) {
+
+  const variants =
+    Array.isArray(item.variants)
+      ? item.variants
+      : [];
+
+
+  if (variants.length) {
 
     const selected =
       $('#itemModal .variant.selected');
 
+
     variant =
       selected
         ?.querySelector('span')
-        ?.textContent ||
-      item.variants[0].name;
+        ?.textContent
+        ?.trim() ||
+      variants[0].name;
+
 
     price =
       Number(
         selected?.dataset.price ||
-        item.variants[0].price
+        variants[0].price ||
+        0
       );
+
   }
 
 
@@ -954,47 +1417,61 @@ function confirmAdd(item) {
     (item.addonGroups || [])
       .map(id =>
         (DATA.settings.addonGroups || [])
-          .find(g => g.id === id)
+          .find(group => group.id === id)
       )
       .filter(
-        g => g && g.active !== false
+        group =>
+          group &&
+          group.active !== false
       );
 
 
-  for (const g of groups) {
+  for (const group of groups) {
 
     if (
-      g.required &&
+      group.required &&
       !$$(
-        `#itemModal .addon-choice[data-group="${CSS.escape(g.id)}"].selected`
+        `#itemModal .addon-choice[data-group="${CSS.escape(group.id)}"].selected`
       ).length
     ) {
 
-      toast(`Please choose ${g.name}`);
+      toast(
+        `Please choose ${group.name}`
+      );
 
       return;
     }
+
   }
 
 
   const addons =
-    [...$$(
-      '#itemModal .addon-choice.selected'
-    )].map(x => ({
-      name: x.dataset.name,
-      price: Number(x.dataset.price || 0)
+    [
+      ...$$(
+        '#itemModal .addon-choice.selected'
+      )
+    ].map(element => ({
+      name: element.dataset.name,
+      price: Number(
+        element.dataset.price || 0
+      )
     }));
 
 
   const legacy =
-    [...$$(
-      '#itemModal .addon.selected'
-    )].map(x => ({
+    [
+      ...$$(
+        '#itemModal .addon.selected'
+      )
+    ].map(element => ({
       name:
-        x.dataset.name ||
-        x.textContent.trim(),
+        element.dataset.name ||
+        element.textContent.trim(),
+
       price:
-        Number(x.dataset.price || 0)
+        Number(
+          element.dataset.price || 0
+        )
     }));
 
 
@@ -1003,8 +1480,9 @@ function confirmAdd(item) {
 
   const addonTotal =
     addons.reduce(
-      (sum, a) =>
-        sum + Number(a.price || 0),
+      (sum, addon) =>
+        sum +
+        Number(addon.price || 0),
       0
     );
 
@@ -1024,7 +1502,8 @@ function confirmAdd(item) {
     addons,
 
     price:
-      price + addonTotal,
+      price +
+      addonTotal,
 
     basePrice:
       price,
@@ -1037,6 +1516,7 @@ function confirmAdd(item) {
         DATA.settings.defaultContainerCharge ??
         0
       )
+
   });
 
 
@@ -1044,27 +1524,32 @@ function confirmAdd(item) {
 
   renderCart();
 
-  toast('Added to cart ✓');
+  toast(
+    'Added to cart ✓'
+  );
+
 }
 
 
-/* =========================
+/* =========================================================
    CART
-========================= */
+   ========================================================= */
 
 function renderCart() {
 
   const count =
     cart.reduce(
       (sum, item) =>
-        sum + item.qty,
+        sum + Number(item.qty || 0),
       0
     );
+
 
   if ($('#cartCount')) {
     $('#cartCount').textContent =
       count;
   }
+
 
   if ($('#drawerCount')) {
     $('#drawerCount').textContent =
@@ -1077,79 +1562,93 @@ function renderCart() {
     $('#cartItems').innerHTML =
       cart.length
 
-        ? cart.map((x, i) => `
+        ? cart.map((item, index) => {
 
-          <div class="cart-row">
+            const addons =
+              item.addons?.length
+                ? item.addons
+                    .map(addon =>
+                      typeof addon === 'string'
+                        ? addon
+                        : addon.name
+                    )
+                    .join(', ')
+                : '';
 
-            <div class="cart-thumb">
-              🍜
-            </div>
 
-            <div class="cart-info">
+            return `
+              <div class="cart-row">
 
-              <h4>
-                ${x.name}
-              </h4>
+                <div class="cart-thumb">
+                  🍜
+                </div>
 
-              <small>
-                ${x.variant || ''}
-                ${
-                  x.addons?.length
-                    ? ' · ' +
-                      x.addons
-                        .map(a =>
-                          typeof a === 'string'
-                            ? a
-                            : a.name
-                        )
-                        .join(', ')
-                    : ''
-                }
-              </small>
+                <div class="cart-info">
 
-              <div class="qty">
+                  <h4>
+                    ${escapeHtml(item.name || '')}
+                  </h4>
 
-                <button
-                  type="button"
-                  onclick="changeQty(${i}, -1)"
-                >
-                  −
-                </button>
+                  <small>
 
-                <b>
-                  ${x.qty}
-                </b>
+                    ${escapeHtml(item.variant || '')}
 
-                <button
-                  type="button"
-                  onclick="changeQty(${i}, 1)"
-                >
-                  +
-                </button>
+                    ${
+                      addons
+                        ? ' · ' +
+                          escapeHtml(addons)
+                        : ''
+                    }
+
+                  </small>
+
+                  <div class="qty">
+
+                    <button
+                      type="button"
+                      onclick="changeQty(${index}, -1)"
+                    >
+                      −
+                    </button>
+
+                    <b>
+                      ${item.qty}
+                    </b>
+
+                    <button
+                      type="button"
+                      onclick="changeQty(${index}, 1)"
+                    >
+                      +
+                    </button>
+
+                  </div>
+
+                </div>
+
+                <div>
+
+                  <b>
+                    ${money(
+                      item.price *
+                      item.qty
+                    )}
+                  </b>
+
+                  <button
+                    type="button"
+                    class="remove"
+                    onclick="removeItem(${index})"
+                  >
+                    🗑
+                  </button>
+
+                </div>
 
               </div>
+            `;
 
-            </div>
-
-            <div>
-
-              <b>
-                ${money(x.price * x.qty)}
-              </b>
-
-              <button
-                class="remove"
-                type="button"
-                onclick="removeItem(${i})"
-              >
-                🗑
-              </button>
-
-            </div>
-
-          </div>
-
-        `).join('')
+          }).join('')
 
         : `
           <div class="empty">
@@ -1158,30 +1657,46 @@ function renderCart() {
             Add something delicious!
           </div>
         `;
+
   }
 
 
-  const sub =
+  const subtotal =
     cart.reduce(
-      (sum, x) =>
-        sum + x.price * x.qty,
+      (sum, item) =>
+        sum +
+        Number(item.price || 0) *
+        Number(item.qty || 0),
       0
     );
 
-  const discount =
-    sub *
-    (Number(
+
+  const discountPercent =
+    Number(
       DATA.settings.discountPercent || 15
-    ) / 100);
+    );
+
+
+  const gstPercent =
+    Number(
+      DATA.settings.gstPercent || 5
+    );
+
+
+  const discount =
+    subtotal *
+    discountPercent /
+    100;
+
 
   const gst =
-    (sub - discount) *
-    (Number(
-      DATA.settings.gstPercent || 5
-    ) / 100);
+    (subtotal - discount) *
+    gstPercent /
+    100;
+
 
   const total =
-    sub -
+    subtotal -
     discount +
     gst;
 
@@ -1191,24 +1706,35 @@ function renderCart() {
     $('#cartSummary').innerHTML = `
 
       <div class="sum">
-        <span>Sub Total</span>
-        <b>${money(sub)}</b>
+
+        <span>
+          Sub Total
+        </span>
+
+        <b>
+          ${money(subtotal)}
+        </b>
+
       </div>
 
+
       <div class="sum">
+
         <span>
-          Discount (${DATA.settings.discountPercent || 15}%)
+          Discount (${discountPercent}%)
         </span>
 
         <b style="color:#14863b">
           −${money(discount)}
         </b>
+
       </div>
+
 
       <div class="sum">
 
         <span>
-          GST (${DATA.settings.gstPercent || 5}%)
+          GST (${gstPercent}%)
         </span>
 
         <b>
@@ -1216,6 +1742,7 @@ function renderCart() {
         </b>
 
       </div>
+
 
       <div class="sum total">
 
@@ -1229,57 +1756,83 @@ function renderCart() {
 
       </div>
 
+
       <small style="color:#857686">
         Container charges are shown at checkout.
       </small>
 
     `;
+
   }
+
 }
 
-function changeQty(i, d) {
 
-  if (!cart[i]) return;
+function changeQty(index, difference) {
 
-  cart[i].qty += d;
+  if (!cart[index]) {
+    return;
+  }
 
-  if (cart[i].qty <= 0) {
-    cart.splice(i, 1);
+  cart[index].qty += difference;
+
+  if (cart[index].qty <= 0) {
+    cart.splice(index, 1);
   }
 
   renderCart();
 }
 
-function removeItem(i) {
 
-  cart.splice(i, 1);
+function removeItem(index) {
+
+  if (
+    index < 0 ||
+    index >= cart.length
+  ) {
+    return;
+  }
+
+  cart.splice(index, 1);
 
   renderCart();
 }
+
 
 function openCart() {
 
-  $('#cartDrawer')?.classList.add('open');
+  $('#cartDrawer')
+    ?.classList.add('open');
 
-  $('#overlay')?.classList.add('show');
+  $('#overlay')
+    ?.classList.add('show');
+
 }
+
 
 function closeCart() {
 
-  $('#cartDrawer')?.classList.remove('open');
+  $('#cartDrawer')
+    ?.classList.remove('open');
 
-  $('#overlay')?.classList.remove('show');
+  $('#overlay')
+    ?.classList.remove('show');
+
 }
 
 
-/* =========================
+/* =========================================================
    CHECKOUT
-========================= */
+   ========================================================= */
 
 function goCheckout() {
 
   if (!cart.length) {
-    toast('Please add items first');
+
+    toast(
+      'Please add items first'
+    );
+
     return;
   }
 
@@ -1287,82 +1840,119 @@ function goCheckout() {
 
   renderCheckout();
 
-  $('#checkoutModal')?.classList.add('show');
+  $('#checkoutModal')
+    ?.classList.add('show');
+
 }
+
 
 function closeCheckout() {
 
-  $('#checkoutModal')?.classList.remove('show');
+  $('#checkoutModal')
+    ?.classList.remove('show');
+
 }
+
 
 function renderCheckout() {
 
-  const sub =
+  const subtotal =
     cart.reduce(
-      (sum, x) =>
-        sum + x.price * x.qty,
+      (sum, item) =>
+        sum +
+        Number(item.price || 0) *
+        Number(item.qty || 0),
       0
     );
 
-  const baseDiscount =
-    sub *
-    (Number(
+
+  const discountPercent =
+    Number(
       DATA.settings.discountPercent || 15
-    ) / 100);
+    );
+
+
+  const gstPercent =
+    Number(
+      DATA.settings.gstPercent || 5
+    );
+
+
+  const baseDiscount =
+    subtotal *
+    discountPercent /
+    100;
+
+
+  const gstBase =
+    subtotal -
+    baseDiscount -
+    couponDiscount;
+
 
   const gst =
-    (
-      sub -
-      baseDiscount -
-      couponDiscount
-    ) *
-    (
-      Number(
-        DATA.settings.gstPercent || 5
-      ) / 100
-    );
+    Math.max(0, gstBase) *
+    gstPercent /
+    100;
+
 
   const container =
     cart.reduce(
-      (sum, x) =>
+      (sum, item) =>
         sum +
-        (
-          Number(
-            x.containerCharge ??
-            DATA.settings.defaultContainerCharge ??
-            0
-          ) * x.qty
-        ),
+        Number(
+          item.containerCharge ??
+          DATA.settings.defaultContainerCharge ??
+          0
+        ) *
+        Number(item.qty || 0),
       0
     );
 
+
   const total =
-    sub -
+    subtotal -
     baseDiscount -
     couponDiscount +
     gst +
     container;
 
 
-  if (!$('#checkoutTotal')) return;
+  const checkoutTotal =
+    $('#checkoutTotal');
+
+  if (!checkoutTotal) {
+    return;
+  }
 
 
-  $('#checkoutTotal').innerHTML = `
+  checkoutTotal.innerHTML = `
 
     <div class="sum">
-      <span>Subtotal</span>
-      <b>${money(sub)}</b>
+
+      <span>
+        Subtotal
+      </span>
+
+      <b>
+        ${money(subtotal)}
+      </b>
+
     </div>
 
+
     <div class="sum">
+
       <span>
-        ${DATA.settings.discountPercent || 15}% Discount
+        ${discountPercent}% Discount
       </span>
 
       <b>
         −${money(baseDiscount)}
       </b>
+
     </div>
+
 
     <div class="sum">
 
@@ -1370,7 +1960,9 @@ function renderCheckout() {
         Coupon
         ${
           appliedCoupon
-            ? '(' + appliedCoupon + ')'
+            ? '(' +
+              escapeHtml(appliedCoupon) +
+              ')'
             : ''
         }
       </span>
@@ -1378,17 +1970,19 @@ function renderCheckout() {
       <b>
         ${
           couponDiscount
-            ? '−' + money(couponDiscount)
+            ? '−' +
+              money(couponDiscount)
             : money(0)
         }
       </b>
 
     </div>
 
+
     <div class="sum">
 
       <span>
-        GST (${DATA.settings.gstPercent || 5}%)
+        GST (${gstPercent}%)
       </span>
 
       <b>
@@ -1396,6 +1990,7 @@ function renderCheckout() {
       </b>
 
     </div>
+
 
     <div class="sum">
 
@@ -1408,6 +2003,7 @@ function renderCheckout() {
       </b>
 
     </div>
+
 
     <div class="sum total">
 
@@ -1425,9 +2021,9 @@ function renderCheckout() {
 }
 
 
-/* =========================
+/* =========================================================
    COUPON
-========================= */
+   ========================================================= */
 
 function applyCoupon() {
 
@@ -1435,24 +2031,27 @@ function applyCoupon() {
     $('#couponCode');
 
   const code =
-    (input?.value || '')
+    String(input?.value || '')
       .trim()
       .toUpperCase();
 
-  const sub =
+
+  const subtotal =
     cart.reduce(
-      (sum, x) =>
-        sum + x.price * x.qty,
+      (sum, item) =>
+        sum +
+        Number(item.price || 0) *
+        Number(item.qty || 0),
       0
     );
 
 
   const coupon =
     (DATA.coupons || [])
-      .find(
-        x =>
-          x.active !== false &&
-          String(x.code).toUpperCase() === code
+      .find(item =>
+        item.active !== false &&
+        String(item.code || '')
+          .toUpperCase() === code
       );
 
 
@@ -1462,6 +2061,7 @@ function applyCoupon() {
     appliedCoupon = '';
 
     if ($('#couponStatus')) {
+
       $('#couponStatus').textContent =
         code
           ? 'Invalid coupon code.'
@@ -1469,6 +2069,7 @@ function applyCoupon() {
 
       $('#couponStatus').className =
         'coupon-bad';
+
     }
 
     renderCheckout();
@@ -1477,10 +2078,13 @@ function applyCoupon() {
   }
 
 
-  if (
-    sub <
-    Number(coupon.minOrder || 0)
-  ) {
+  const minimum =
+    Number(
+      coupon.minOrder || 0
+    );
+
+
+  if (subtotal < minimum) {
 
     couponDiscount = 0;
     appliedCoupon = '';
@@ -1489,10 +2093,11 @@ function applyCoupon() {
 
       $('#couponStatus').textContent =
         'Minimum order for this coupon is ' +
-        money(coupon.minOrder);
+        money(minimum);
 
       $('#couponStatus').className =
         'coupon-bad';
+
     }
 
     renderCheckout();
@@ -1501,15 +2106,32 @@ function applyCoupon() {
   }
 
 
-  couponDiscount =
-    coupon.type === 'flat'
-      ? Math.min(
-          sub,
-          Number(coupon.value || 0)
-        )
-      : sub *
-        Number(coupon.value || 0) /
-        100;
+  const value =
+    Number(
+      coupon.value || 0
+    );
+
+
+  if (
+    String(coupon.type || '')
+      .toLowerCase() === 'flat'
+  ) {
+
+    couponDiscount =
+      Math.min(
+        subtotal,
+        value
+      );
+
+  } else {
+
+    couponDiscount =
+      subtotal *
+      value /
+      100;
+
+  }
+
 
   appliedCoupon =
     coupon.code;
@@ -1522,6 +2144,7 @@ function applyCoupon() {
 
     $('#couponStatus').className =
       'coupon-ok';
+
   }
 
 
@@ -1529,9 +2152,9 @@ function applyCoupon() {
 }
 
 
-/* =========================
+/* =========================================================
    LOCATION
-========================= */
+   ========================================================= */
 
 function getLocation() {
 
@@ -1559,83 +2182,103 @@ function getLocation() {
       customerLocation =
         `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
 
+
       if ($('#locationStatus')) {
+
         $('#locationStatus').textContent =
           'Current location added ✓';
+
       }
+
     },
 
     () => {
 
       if ($('#locationStatus')) {
+
         $('#locationStatus').textContent =
           'Could not get location. Please enter address manually.';
+
       }
+
     }
+
   );
+
 }
 
 
-/* =========================
+/* =========================================================
    ONLINE ORDER
-========================= */
+   ========================================================= */
 
-async function submitCheckout(e) {
+async function submitCheckout(event) {
 
-  e.preventDefault();
+  event.preventDefault();
+
 
   const form =
-    e.target;
+    event.target;
 
-  const f =
+  const formData =
     new FormData(form);
 
 
-  const sub =
+  const subtotal =
     cart.reduce(
-      (sum, x) =>
-        sum + x.price * x.qty,
+      (sum, item) =>
+        sum +
+        Number(item.price || 0) *
+        Number(item.qty || 0),
       0
     );
 
 
-  const discount =
-    sub *
+  const discountPercent =
     Number(
       DATA.settings.discountPercent || 15
-    ) /
+    );
+
+
+  const gstPercent =
+    Number(
+      DATA.settings.gstPercent || 5
+    );
+
+
+  const discount =
+    subtotal *
+    discountPercent /
     100;
 
 
   const gst =
-    (
-      sub -
+    Math.max(
+      0,
+      subtotal -
       discount -
       couponDiscount
     ) *
-    Number(
-      DATA.settings.gstPercent || 5
-    ) /
+    gstPercent /
     100;
 
 
   const container =
     cart.reduce(
-      (sum, x) =>
+      (sum, item) =>
         sum +
-        (
-          Number(
-            x.containerCharge ??
-            DATA.settings.defaultContainerCharge ??
-            0
-          ) * x.qty
-        ),
+        Number(
+          item.containerCharge ??
+          DATA.settings.defaultContainerCharge ??
+          0
+        ) *
+        Number(item.qty || 0),
       0
     );
 
 
   const total =
-    sub -
+    subtotal -
     discount -
     couponDiscount +
     gst +
@@ -1644,15 +2287,21 @@ async function submitCheckout(e) {
 
   const customer = {
 
-    name: f.get('name'),
+    name:
+      formData.get('name'),
 
-    phone: f.get('phone'),
+    phone:
+      formData.get('phone'),
 
-    address: f.get('address'),
+    address:
+      formData.get('address'),
 
-    landmark: f.get('landmark'),
+    landmark:
+      formData.get('landmark'),
 
-    location: customerLocation
+    location:
+      customerLocation
+
   };
 
 
@@ -1662,7 +2311,7 @@ async function submitCheckout(e) {
 
     items: cart,
 
-    subtotal: sub,
+    subtotal,
 
     discount,
 
@@ -1672,108 +2321,153 @@ async function submitCheckout(e) {
 
     gst,
 
-    containerCharge: container,
+    containerCharge:
+      container,
 
     total
+
   };
 
 
   try {
 
-    const r =
+    const response =
       await fetch(
         '/api/orders',
         {
           method: 'POST',
+
           headers: {
             'Content-Type':
               'application/json'
           },
+
           body:
             JSON.stringify(order)
         }
       );
 
 
+    if (!response.ok) {
+      throw new Error(
+        `Order request failed: ${response.status}`
+      );
+    }
+
+
     const data =
-      await r.json();
+      await response.json();
 
 
-    let text =
-      `*WASABEE NEW ONLINE ORDER*\n`;
+    let message =
+      '*WASABEE NEW ONLINE ORDER*\n';
 
-    text +=
-      `Order: ${data.orderId}\n\n`;
 
-    text +=
-      `*Customer*\n`;
+    message +=
+      `Order: ${
+        data.orderId ||
+        data.id ||
+        'NEW'
+      }\n\n`;
 
-    text +=
+
+    message +=
+      '*Customer*\n';
+
+
+    message +=
       `Name: ${customer.name}\n`;
 
-    text +=
+
+    message +=
       `Phone: ${customer.phone}\n`;
 
-    text +=
+
+    message +=
       `Address: ${customer.address}\n`;
 
-    text +=
-      `Landmark: ${customer.landmark || '-'}\n`;
 
-    text +=
-      `Location: ${customerLocation || '-'}\n\n`;
-
-    text +=
-      `*Items*\n`;
+    message +=
+      `Landmark: ${
+        customer.landmark || '-'
+      }\n`;
 
 
-    cart.forEach(x => {
+    message +=
+      `Location: ${
+        customerLocation || '-'
+      }\n\n`;
 
-      text +=
-        `• ${x.name}`;
 
-      if (x.variant) {
-        text +=
-          ` (${x.variant})`;
+    message +=
+      '*Items*\n';
+
+
+    cart.forEach(item => {
+
+      message +=
+        `• ${item.name}`;
+
+
+      if (item.variant) {
+
+        message +=
+          ` (${item.variant})`;
+
       }
 
-      if (x.addons?.length) {
 
-        text +=
-          ` [${
-            x.addons
-              .map(a =>
-                typeof a === 'string'
-                  ? a
-                  : a.name
-              )
-              .join(', ')
-          }]`;
+      if (item.addons?.length) {
+
+        const addons =
+          item.addons
+            .map(addon =>
+              typeof addon === 'string'
+                ? addon
+                : addon.name
+            )
+            .join(', ');
+
+        message +=
+          ` [${addons}]`;
+
       }
 
-      text +=
-        ` × ${x.qty} = ${money(
-          x.price * x.qty
-        )}\n`;
+
+      message +=
+        ` × ${item.qty} = ${
+          money(
+            item.price *
+            item.qty
+          )
+        }\n`;
+
     });
 
 
-    text +=
-      `\nSubtotal: ${money(sub)}\n`;
+    message +=
+      `\nSubtotal: ${money(subtotal)}\n`;
 
-    text +=
+
+    message +=
       `Discount: -${money(discount)}\n`;
 
-    text +=
-      `Coupon ${appliedCoupon || ''}: -${money(couponDiscount)}\n`;
 
-    text +=
+    message +=
+      `Coupon ${
+        appliedCoupon || ''
+      }: -${money(couponDiscount)}\n`;
+
+
+    message +=
       `GST: ${money(gst)}\n`;
 
-    text +=
+
+    message +=
       `Container: ${money(container)}\n`;
 
-    text +=
+
+    message +=
       `*TOTAL: ${money(total)}*`;
 
 
@@ -1784,9 +2478,10 @@ async function submitCheckout(e) {
     if (whatsapp) {
 
       window.open(
-        `https://wa.me/${whatsapp}?text=${encodeURIComponent(text)}`,
+        `https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`,
         '_blank'
       );
+
     }
 
 
@@ -1798,67 +2493,106 @@ async function submitCheckout(e) {
 
     customerLocation = '';
 
+
     renderCart();
 
     closeCheckout();
+
+
+    if (form) {
+      form.reset();
+    }
+
+
+    if ($('#couponStatus')) {
+      $('#couponStatus').textContent = '';
+      $('#couponStatus').className = '';
+    }
+
+
+    if ($('#locationStatus')) {
+      $('#locationStatus').textContent =
+        'Location not added';
+    }
+
 
     toast(
       'Order sent to WhatsApp ✓'
     );
 
 
-  } catch (err) {
+  } catch (error) {
 
-    console.error(err);
+    console.error(
+      'CHECKOUT ERROR:',
+      error
+    );
 
     toast(
       'Could not place order. Please try again.'
     );
+
   }
+
 }
 
 
-/* =========================
+/* =========================================================
    TABLE BOOKING
-========================= */
+   ========================================================= */
 
-async function submitBooking(e) {
+async function submitBooking(event) {
 
-  e.preventDefault();
+  event.preventDefault();
 
-  const f =
-    new FormData(e.target);
 
-  const b =
+  const form =
+    event.target;
+
+  const formData =
+    new FormData(form);
+
+
+  const booking =
     Object.fromEntries(
-      f.entries()
+      formData.entries()
     );
 
 
   try {
 
-    await fetch(
-      '/api/bookings',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type':
-            'application/json'
-        },
-        body:
-          JSON.stringify(b)
-      }
-    );
+    const response =
+      await fetch(
+        '/api/bookings',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+
+          body:
+            JSON.stringify(booking)
+        }
+      );
+
+
+    if (!response.ok) {
+      throw new Error(
+        `Booking request failed: ${response.status}`
+      );
+    }
 
 
     const text =
       `*WASABEE TABLE BOOKING REQUEST*\n` +
-      `Name: ${b.name}\n` +
-      `Phone: ${b.phone}\n` +
-      `Date: ${b.date}\n` +
-      `Time: ${b.time}\n` +
-      `Guests: ${b.guests}\n` +
-      `Notes: ${b.notes || '-'}`;
+      `Name: ${booking.name}\n` +
+      `Phone: ${booking.phone}\n` +
+      `Date: ${booking.date}\n` +
+      `Time: ${booking.time}\n` +
+      `Guests: ${booking.guests}\n` +
+      `Notes: ${booking.notes || '-'}`;
 
 
     const whatsapp =
@@ -1871,107 +2605,155 @@ async function submitBooking(e) {
         `https://wa.me/${whatsapp}?text=${encodeURIComponent(text)}`,
         '_blank'
       );
+
     }
 
 
-    e.target.reset();
+    form.reset();
+
 
     toast(
       'Booking request sent ✓'
     );
 
 
-  } catch (err) {
+  } catch (error) {
 
-    console.error(err);
+    console.error(
+      'BOOKING ERROR:',
+      error
+    );
 
     toast(
       'Booking could not be sent.'
     );
+
   }
+
 }
 
 
-/* =========================
+/* =========================================================
    REVIEWS
-========================= */
+   ========================================================= */
 
 function renderReviews() {
 
-  const rs =
-    DATA.reviews || [];
+  const reviews =
+    Array.isArray(DATA.reviews)
+      ? DATA.reviews
+      : [];
 
 
-  if ($('#reviewsList')) {
+  const reviewsList =
+    $('#reviewsList');
 
-    $('#reviewsList').innerHTML =
-      rs.length
 
-        ? rs.map(r => {
+  if (reviewsList) {
 
-            const rating =
-              Math.max(
-                0,
-                Math.min(
-                  5,
-                  Number(r.rating || 5)
+    if (!reviews.length) {
+
+      reviewsList.innerHTML = `
+        <div class="review">
+
+          <div class="stars">
+            ★★★★★
+          </div>
+
+          <h4>
+            Be our first reviewer
+          </h4>
+
+          <p>
+            Share your WASABEE experience with us.
+          </p>
+
+        </div>
+      `;
+
+    } else {
+
+      reviewsList.innerHTML =
+        reviews.map(review => {
+
+          const rating =
+            Math.max(
+              0,
+              Math.min(
+                5,
+                Number(
+                  review.rating || 5
                 )
+              )
+            );
+
+
+          let date = '';
+
+          if (review.createdAt) {
+
+            const parsedDate =
+              new Date(
+                review.createdAt
               );
 
-            return `
-              <div class="review">
+            if (
+              !Number.isNaN(
+                parsedDate.getTime()
+              )
+            ) {
 
-                <div class="stars">
-                  ${'★'.repeat(rating)}
-                  ${'☆'.repeat(5 - rating)}
-                </div>
+              date =
+                parsedDate.toLocaleDateString();
 
-                <h4>
-                  ${r.name || 'Guest'}
-                </h4>
+            }
 
-                <p>
-                  ${r.comment || ''}
-                </p>
+          }
 
-                <small>
-                  ${
-                    r.createdAt
-                      ? new Date(
-                          r.createdAt
-                        ).toLocaleDateString()
-                      : ''
-                  }
-                </small>
 
+          return `
+            <div class="review">
+
+              <div class="stars">
+                ${'★'.repeat(rating)}
+                ${'☆'.repeat(5 - rating)}
               </div>
-            `;
 
-          }).join('')
+              <h4>
+                ${escapeHtml(
+                  review.name || 'Guest'
+                )}
+              </h4>
 
-        : `
-          <div class="review">
+              <p>
+                ${escapeHtml(
+                  review.comment || ''
+                )}
+              </p>
 
-            <div class="stars">
-              ★★★★★
+              ${
+                date
+                  ? `<small>${date}</small>`
+                  : ''
+              }
+
             </div>
+          `;
 
-            <h4>
-              Be our first reviewer
-            </h4>
+        }).join('');
 
-            <p>
-              Share your WASABEE experience with us.
-            </p>
+    }
 
-          </div>
-        `;
   }
 
 
-  if ($('#reviewSummary')) {
+  const summary =
+    $('#reviewSummary');
 
-    $('#reviewSummary').innerHTML = `
+
+  if (summary) {
+
+    summary.innerHTML = `
 
       <div class="stars">
         ★★★★★
@@ -1979,92 +2761,124 @@ function renderReviews() {
 
       <b>
         ${
-          rs.length
+          reviews.length
             ? 'Loved by our guests'
             : 'Your review matters'
         }
       </b>
 
     `;
+
   }
+
 }
 
 
-async function submitReview(e) {
+async function submitReview(event) {
 
-  e.preventDefault();
+  event.preventDefault();
 
-  const f =
-    new FormData(e.target);
+
+  const form =
+    event.target;
+
+  const formData =
+    new FormData(form);
 
 
   try {
 
-    await fetch(
-      '/api/reviews',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type':
-            'application/json'
-        },
-        body:
-          JSON.stringify({
+    const response =
+      await fetch(
+        '/api/reviews',
+        {
+          method: 'POST',
 
-            name:
-              f.get('name'),
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
 
-            comment:
-              f.get('comment'),
+          body:
+            JSON.stringify({
 
-            rating:
-              window.reviewRating || 5
+              name:
+                formData.get('name'),
 
-          })
-      }
-    );
+              comment:
+                formData.get('comment'),
+
+              rating:
+                reviewRating || 5
+
+            })
+        }
+      );
 
 
-    e.target.reset();
+    if (!response.ok) {
+      throw new Error(
+        `Review request failed: ${response.status}`
+      );
+    }
+
+
+    form.reset();
+
+    reviewRating = 5;
+
 
     toast(
       'Thank you for your review ✓'
     );
 
 
-    const r =
+    const responseData =
       await fetch(
-        '/api/public-data'
+        '/api/public-data',
+        {
+          cache: 'no-store'
+        }
       );
 
-    DATA =
-      await r.json();
+
+    if (responseData.ok) {
+
+      DATA =
+        await responseData.json();
+
+      renderReviews();
+
+    }
 
 
-    renderReviews();
+  } catch (error) {
 
-
-  } catch (err) {
-
-    console.error(err);
+    console.error(
+      'REVIEW ERROR:',
+      error
+    );
 
     toast(
       'Could not submit review.'
     );
+
   }
+
 }
 
 
-/* =========================
-   NAVIGATION
-========================= */
+/* =========================================================
+   CATEGORY NAVIGATION
+   ========================================================= */
 
 function jumpCat(id) {
 
   const target =
     document.querySelector(
-      '#cat-' + id
+      '#cat-' + CSS.escape(String(id))
     );
+
 
   if (target) {
 
@@ -2072,13 +2886,23 @@ function jumpCat(id) {
       behavior: 'smooth',
       block: 'start'
     });
+
   }
 
 
-  $$('.cat').forEach(x =>
-    x.classList.remove('active')
-  );
+  $$('.cat')
+    .forEach(button => {
+      button.classList.remove(
+        'active'
+      );
+    });
 
+
+  /*
+    onclick="jumpCat(...)" sends the click event
+    through the global browser event in most browsers.
+    This is kept compatible with the existing HTML.
+  */
 
   if (
     typeof event !== 'undefined' &&
@@ -2087,97 +2911,275 @@ function jumpCat(id) {
 
     event.currentTarget
       .classList.add('active');
+
   }
+
 }
+
+
+/* =========================================================
+   MOBILE NAVIGATION
+   ========================================================= */
 
 function toggleNav() {
 
   $('.topbar nav')
     ?.classList.toggle('show');
+
 }
 
 
-/* =========================
+/* =========================================================
    EVENT LISTENERS
-========================= */
+   ========================================================= */
 
-document.addEventListener(
-  'DOMContentLoaded',
-  () => {
+function setupEventListeners() {
 
-    $('#checkoutForm')
-      ?.addEventListener(
-        'submit',
-        submitCheckout
-      );
+  /* -----------------------------------------
+     CHECKOUT
+     ----------------------------------------- */
 
+  const checkoutForm =
+    $('#checkoutForm');
 
-    $('#bookingForm')
-      ?.addEventListener(
-        'submit',
-        submitBooking
-      );
+  if (checkoutForm) {
 
+    checkoutForm.addEventListener(
+      'submit',
+      submitCheckout
+    );
 
-    $('#reviewForm')
-      ?.addEventListener(
-        'submit',
-        submitReview
-      );
-
-
-    $('#starsInput')
-      ?.addEventListener(
-        'click',
-        e => {
-
-          if (
-            e.target.closest('#starsInput')
-          ) {
-
-            window.reviewRating = 5;
-
-            e.currentTarget.style.color =
-              '#d09b00';
-          }
-        }
-      );
-
-
-    const searchInput =
-      $('#menuSearch');
-
-    if (searchInput) {
-
-      searchInput.addEventListener(
-        'input',
-        searchMenu
-      );
-
-      searchInput.addEventListener(
-        'keydown',
-        e => {
-
-          if (e.key === 'Escape') {
-            closeMenuSearch();
-          }
-        }
-      );
-    }
-
-
-    const overlay =
-      $('#overlay');
-
-    if (overlay) {
-
-      overlay.addEventListener(
-        'click',
-        closeCart
-      );
-    }
-
-
-    init();
   }
-);
+
+
+  /* -----------------------------------------
+     BOOKING
+     ----------------------------------------- */
+
+  const bookingForm =
+    $('#bookingForm');
+
+  if (bookingForm) {
+
+    bookingForm.addEventListener(
+      'submit',
+      submitBooking
+    );
+
+  }
+
+
+  /* -----------------------------------------
+     REVIEW
+     ----------------------------------------- */
+
+  const reviewForm =
+    $('#reviewForm');
+
+  if (reviewForm) {
+
+    reviewForm.addEventListener(
+      'submit',
+      submitReview
+    );
+
+  }
+
+
+  /* -----------------------------------------
+     STAR RATING
+     ----------------------------------------- */
+
+  const starsInput =
+    $('#starsInput');
+
+  if (starsInput) {
+
+    starsInput.addEventListener(
+      'click',
+      () => {
+
+        reviewRating = 5;
+
+        starsInput.style.color =
+          '#d09b00';
+
+      }
+    );
+
+  }
+
+
+  /* -----------------------------------------
+     MENU SEARCH
+     ----------------------------------------- */
+
+  const searchInput =
+    $('#menuSearch');
+
+  if (searchInput) {
+
+    searchInput.addEventListener(
+      'input',
+      searchMenu
+    );
+
+
+    searchInput.addEventListener(
+      'keydown',
+      event => {
+
+        if (event.key === 'Escape') {
+          closeMenuSearch();
+        }
+
+      }
+    );
+
+  }
+
+
+  /* -----------------------------------------
+     CART OVERLAY
+     ----------------------------------------- */
+
+  const overlay =
+    $('#overlay');
+
+  if (overlay) {
+
+    overlay.addEventListener(
+      'click',
+      closeCart
+    );
+
+  }
+
+
+  /* -----------------------------------------
+     CLOSE MODALS WHEN CLICKING OUTSIDE
+     ----------------------------------------- */
+
+  const itemModal =
+    $('#itemModal');
+
+  if (itemModal) {
+
+    itemModal.addEventListener(
+      'click',
+      event => {
+
+        if (
+          event.target ===
+          itemModal
+        ) {
+
+          closeItem();
+
+        }
+
+      }
+    );
+
+  }
+
+
+  const checkoutModal =
+    $('#checkoutModal');
+
+  if (checkoutModal) {
+
+    checkoutModal.addEventListener(
+      'click',
+      event => {
+
+        if (
+          event.target ===
+          checkoutModal
+        ) {
+
+          closeCheckout();
+
+        }
+
+      }
+    );
+
+  }
+
+
+  const menuSearchModal =
+    $('#menuSearchModal');
+
+  if (menuSearchModal) {
+
+    menuSearchModal.addEventListener(
+      'click',
+      event => {
+
+        if (
+          event.target ===
+          menuSearchModal
+        ) {
+
+          closeMenuSearch();
+
+        }
+
+      }
+    );
+
+  }
+
+
+  /* -----------------------------------------
+     ESC KEY
+     ----------------------------------------- */
+
+  document.addEventListener(
+    'keydown',
+    event => {
+
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      closeCart();
+      closeItem();
+      closeCheckout();
+      closeMenuSearch();
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   START APPLICATION
+   ========================================================= */
+
+if (
+  document.readyState ===
+  'loading'
+) {
+
+  document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+
+      setupEventListeners();
+      init();
+
+    },
+    {
+      once: true
+    }
+  );
+
+} else {
+
+  setupEventListeners();
+  init();
+
+}
