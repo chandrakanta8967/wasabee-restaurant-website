@@ -7,21 +7,39 @@ let DATA = {
 
 let cart = [];
 let heroIndex = 0;
-let heroTimer;
+let heroTimer = null;
 let couponDiscount = 0;
 let appliedCoupon = '';
+let customerLocation = '';
 
-const $ = s => document.querySelector(s);
-const $$ = s => document.querySelectorAll(s);
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+
+
+/* =========================
+   BASIC HELPERS
+========================= */
 
 function money(n) {
   return (DATA.settings.currency || '₹') +
     Number(n || 0).toLocaleString('en-IN');
 }
 
+function toast(msg) {
+  const t = $('#toast');
+  if (!t) return;
+
+  t.className = 'toast show';
+  t.textContent = msg;
+
+  setTimeout(() => {
+    t.className = 'toast';
+  }, 2400);
+}
+
 
 /* =========================
-   INIT
+   INITIAL LOAD
 ========================= */
 
 async function init() {
@@ -38,76 +56,84 @@ async function init() {
     renderCats();
     renderMenu();
     renderReviews();
-    startHero();
+    renderCart();
 
-    setupSearch();
+    startHero();
 
   } catch (err) {
     console.error('WASABEE INIT ERROR:', err);
+    toast('Website data could not be loaded.');
   }
 }
 
 
 /* =========================
-   HERO
+   HERO BANNER
 ========================= */
 
 function renderHero() {
-  const slides = DATA.settings.heroBanners || [];
+  const container = $('#heroSlides');
+  const dots = $('#heroDots');
 
-  const heroSlides = $('#heroSlides');
-  const heroDots = $('#heroDots');
+  if (!container) return;
 
-  if (!heroSlides) return;
+  const banners = Array.isArray(DATA.settings.heroBanners)
+    ? DATA.settings.heroBanners
+    : [];
 
-  if (!slides.length) {
-    heroSlides.innerHTML = '';
-    if (heroDots) heroDots.innerHTML = '';
+  if (!banners.length) {
+    container.innerHTML = '';
+    if (dots) dots.innerHTML = '';
     return;
   }
 
-  heroSlides.innerHTML = slides.map((x, i) => `
-    <div
-      class="hero-slide ${i === 0 ? 'active' : ''}"
-      style="background-image:url('${x.image || ''}')"
-    >
-      <div class="hero-content">
+  container.innerHTML = banners.map((x, i) => {
 
-        <img
-          class="hero-logo-white"
-          src="/assets/logo-white.png"
-          alt="WASABEE Oriental Cuisine"
-        >
+    const title = String(
+      x.title || 'Oriental Excellence'
+    ).replace(
+      'Oriental Excellence',
+      'Oriental <em>Excellence</em>'
+    );
 
-        <span class="eyebrow">
-          WASABEE • ORIENTAL CUISINE
-        </span>
+    return `
+      <div
+        class="hero-slide ${i === 0 ? 'active' : ''}"
+        style="background-image:url('${x.image || ''}')"
+      >
+        <div class="hero-content">
 
-        <h1>
-          ${(x.title || '').replace(
-            'Oriental Excellence',
-            'Oriental <em>Excellence</em>'
-          )}
-        </h1>
+          <img
+            class="hero-logo-white"
+            src="/assets/logo-white.png"
+            alt="WASABEE Oriental Cuisine"
+          >
 
-        <p>${x.subtitle || ''}</p>
+          <span class="eyebrow">
+            WASABEE • ORIENTAL CUISINE
+          </span>
 
-        <div class="hero-actions">
-          <a class="btn purple" href="#order">
-            Order Online →
-          </a>
+          <h1>${title}</h1>
 
-          <a class="btn ghost" href="#booking">
-            Book a Table
-          </a>
+          <p>${x.subtitle || ''}</p>
+
+          <div class="hero-actions">
+            <a class="btn purple" href="#order">
+              Order Online →
+            </a>
+
+            <a class="btn ghost" href="#booking">
+              Book a Table
+            </a>
+          </div>
+
         </div>
-
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
-  if (heroDots) {
-    heroDots.innerHTML = slides.map((_, i) => `
+  if (dots) {
+    dots.innerHTML = banners.map((_, i) => `
       <span class="dot ${i === 0 ? 'active' : ''}"></span>
     `).join('');
   }
@@ -116,13 +142,17 @@ function renderHero() {
 }
 
 function startHero() {
-  clearInterval(heroTimer);
+  if (heroTimer) {
+    clearInterval(heroTimer);
+  }
 
   const slides = $$('.hero-slide');
 
   if (slides.length <= 1) return;
 
-  heroTimer = setInterval(heroNext, 5000);
+  heroTimer = setInterval(() => {
+    heroNext();
+  }, 5000);
 }
 
 function heroNext() {
@@ -130,7 +160,8 @@ function heroNext() {
 
   if (!slides.length) return;
 
-  heroIndex = (heroIndex + 1) % slides.length;
+  heroIndex =
+    (heroIndex + 1) % slides.length;
 
   heroPaint();
 }
@@ -147,18 +178,24 @@ function heroPrev() {
 }
 
 function heroPaint() {
-  $$('.hero-slide').forEach((x, i) => {
-    x.classList.toggle('active', i === heroIndex);
+  $$('.hero-slide').forEach((slide, i) => {
+    slide.classList.toggle(
+      'active',
+      i === heroIndex
+    );
   });
 
-  $$('.dot').forEach((x, i) => {
-    x.classList.toggle('active', i === heroIndex);
+  $$('.dot').forEach((dot, i) => {
+    dot.classList.toggle(
+      'active',
+      i === heroIndex
+    );
   });
 }
 
 
 /* =========================
-   CATEGORIES
+   CATEGORY BUTTONS
 ========================= */
 
 function renderCats() {
@@ -166,15 +203,21 @@ function renderCats() {
 
   if (!container) return;
 
-  const categories = DATA.menu || [];
+  const categories = Array.isArray(DATA.menu)
+    ? DATA.menu
+    : [];
 
-  container.innerHTML = categories.map((x, i) => `
+  container.innerHTML = categories.map((cat, i) => `
     <button
       class="cat ${i === 0 ? 'active' : ''}"
-      onclick="jumpCat('${x.id}')"
+      onclick="jumpCat('${cat.id}')"
+      type="button"
     >
-      <span class="icon">${x.icon || ''}</span>
-      ${x.name || ''}
+      <span class="icon">
+        ${cat.icon || ''}
+      </span>
+
+      ${cat.name || ''}
     </button>
   `).join('');
 }
@@ -187,20 +230,24 @@ function renderCats() {
 function flattenItems(cat) {
 
   if (Array.isArray(cat.items)) {
-    return cat.items.map(x => ({
-      ...x,
+    return cat.items.map(item => ({
+      ...item,
       sub: ''
     }));
   }
 
-  return (cat.subcategories || []).flatMap(s =>
-    (s.items || []).map(x => ({
-      ...x,
-      sub: s.name || ''
+  return (cat.subcategories || []).flatMap(sub =>
+    (sub.items || []).map(item => ({
+      ...item,
+      sub: sub.name || ''
     }))
   );
 }
 
+
+/* =========================
+   MENU IMAGE
+========================= */
 
 function imageFor(item) {
 
@@ -209,126 +256,38 @@ function imageFor(item) {
   }
 
   /*
-    Fallback image.
-    If your item has no image, this prevents
-    the menu from breaking.
+    No fake external image is used here.
+    If an item has no image, the CSS background
+    will remain available instead of loading
+    a broken Unsplash image.
   */
 
-  return '/assets/logo.png';
+  return '';
 }
 
 
 /* =========================
-   RENDER MENU
+   MENU
 ========================= */
 
 function renderMenu() {
 
   const menuContainer = $('#menu');
 
-  if (!menuContainer) {
-    console.error('Menu container #menu not found');
-    return;
-  }
+  if (!menuContainer) return;
+
+  const categories = Array.isArray(DATA.menu)
+    ? DATA.menu
+    : [];
 
   let html = '';
 
-  function itemCard(item) {
-
-    if (item.active === false) {
-      return '';
-    }
-
-    let base = Number(item.price || 0);
-
-    if (Array.isArray(item.variants) && item.variants.length) {
-      const prices = item.variants
-        .map(v => Number(v.price || 0))
-        .filter(v => v > 0);
-
-      if (prices.length) {
-        base = Math.min(...prices);
-      }
-    }
-
-    const label =
-      item.variants && item.variants.length
-        ? `${item.variants.length} choices`
-        : money(base);
-
-    const itemJson = JSON.stringify(item)
-      .replace(/\\/g, '\\\\')
-      .replace(/'/g, '&#39;');
-
-    return `
-      <article class="food-card">
-
-        <div
-          class="food-img"
-          style="
-            background-image:url('${imageFor(item)}');
-            background-size:cover;
-            background-position:center;
-          "
-        >
-          <span></span>
-        </div>
-
-        <div class="food-body">
-
-          <h4>${item.name || ''}</h4>
-
-          <p>
-            ${
-              item.description ||
-              'Authentic oriental preparation crafted by WASABEE.'
-            }
-          </p>
-
-          ${
-            item.variants && item.variants.length
-              ? `
-                <span class="variant-label">
-                  ${label} • Select before adding
-                </span>
-              `
-              : ''
-          }
-
-          <div class="price-row">
-
-            <span class="price">
-              ${
-                item.variants && item.variants.length
-                  ? `From ${money(base)}`
-                  : money(item.price)
-              }
-            </span>
-
-            <button
-              class="add"
-              onclick='openItem(${itemJson})'
-            >
-              Add +
-            </button>
-
-          </div>
-
-        </div>
-
-      </article>
-    `;
-  }
-
-
-  (DATA.menu || []).forEach(cat => {
+  categories.forEach(cat => {
 
     const items = flattenItems(cat)
       .filter(item => item.active !== false);
 
-    if (!items.length) {
-      return;
-    }
+    if (!items.length) return;
 
     html += `
       <section
@@ -336,7 +295,8 @@ function renderMenu() {
         id="cat-${cat.id}"
       >
 
-        <div class="section-head">
+        <div class="menu-category-head">
+
           <div>
             <span class="eyebrow">
               ${cat.name || ''}
@@ -346,73 +306,162 @@ function renderMenu() {
               ${cat.name || ''}
             </h2>
           </div>
+
         </div>
 
-        <div class="food-grid">
-          ${items.map(itemCard).join('')}
+        <div class="menu-grid">
+
+          ${items.map(item => itemCard(item)).join('')}
+
         </div>
 
       </section>
     `;
   });
 
-
   menuContainer.innerHTML = html;
-
-
-  if (!html) {
-    menuContainer.innerHTML = `
-      <div class="empty">
-        Menu items are currently unavailable.
-      </div>
-    `;
-  }
 }
 
 
 /* =========================
-   SEARCH
+   FOOD CARD
 ========================= */
 
-function setupSearch() {
+function itemCard(item) {
 
-  const input = $('#menuSearch');
-
-  if (!input) {
-    return;
+  if (item.active === false) {
+    return '';
   }
 
-  input.removeEventListener('input', searchMenu);
-  input.addEventListener('input', searchMenu);
+  const variants = Array.isArray(item.variants)
+    ? item.variants
+    : [];
+
+  const hasVariants = variants.length > 0;
+
+  const base = hasVariants
+    ? Math.min(
+        ...variants.map(v =>
+          Number(v.price || 0)
+        )
+      )
+    : Number(item.price || 0);
+
+  const label = hasVariants
+    ? `${variants.length} choices`
+    : money(base);
+
+  const image = imageFor(item);
+
+  const imageStyle = image
+    ? `
+      background-image:url('${image}');
+      background-size:cover;
+      background-position:center;
+    `
+    : '';
+
+  return `
+    <article class="food-card">
+
+      <div
+        class="food-img"
+        style="${imageStyle}"
+      >
+        <span>
+          ${
+            String(item.name || '')
+              .toLowerCase()
+              .includes('soup')
+              ? '🍲'
+              : ''
+          }
+        </span>
+      </div>
+
+      <div class="food-body">
+
+        <h4>
+          ${item.name || ''}
+        </h4>
+
+        <p>
+          ${
+            item.description ||
+            'Authentic oriental preparation crafted by WASABEE.'
+          }
+        </p>
+
+        ${
+          hasVariants
+            ? `
+              <span class="variant-label">
+                ${label} • Select before adding
+              </span>
+            `
+            : ''
+        }
+
+        <div class="price-row">
+
+          <span class="price">
+            ${
+              hasVariants
+                ? `From ${money(base)}`
+                : money(item.price)
+            }
+          </span>
+
+          <button
+            class="add"
+            type="button"
+            onclick='openItem(${JSON.stringify(item).replace(/'/g, '&#39;')})'
+          >
+            Add +
+          </button>
+
+        </div>
+
+      </div>
+
+    </article>
+  `;
 }
 
+
+/* =========================
+   MENU SEARCH
+========================= */
 
 function openMenuSearch() {
 
-  const modal = $('#menuSearchModal');
-  const input = $('#menuSearch');
+  const modal =
+    document.getElementById('menuSearchModal');
 
-  /*
-    If modal exists, open it.
-    If there is no modal, simply focus the search input.
-  */
+  const input =
+    document.getElementById('menuSearch');
 
-  if (modal) {
-    modal.classList.add('show');
+  if (!modal || !input) {
+    console.error(
+      'menuSearchModal or menuSearch not found'
+    );
+    return;
   }
 
-  if (input) {
-    setTimeout(() => {
-      input.focus();
-    }, 100);
-  }
+  modal.classList.add('show');
+
+  setTimeout(() => {
+    input.focus();
+  }, 100);
 }
-
 
 function closeMenuSearch() {
 
-  const modal = $('#menuSearchModal');
-  const input = $('#menuSearch');
+  const modal =
+    document.getElementById('menuSearchModal');
+
+  const input =
+    document.getElementById('menuSearch');
 
   if (modal) {
     modal.classList.remove('show');
@@ -425,19 +474,21 @@ function closeMenuSearch() {
   clearMenuSearch();
 }
 
-
 function searchMenu() {
 
-  const input = $('#menuSearch');
+  const input =
+    document.getElementById('menuSearch');
 
-  if (!input) {
-    return;
-  }
+  const result =
+    document.getElementById('menuSearchResults');
+
+  if (!input) return;
 
   const query =
     input.value.trim().toLowerCase();
 
-  const cards = $$('.food-card');
+  const cards =
+    document.querySelectorAll('.food-card');
 
   let found = 0;
 
@@ -446,13 +497,14 @@ function searchMenu() {
     const text =
       card.innerText.toLowerCase();
 
-    if (!query || text.includes(query)) {
+    if (!query) {
 
       card.style.display = '';
 
-      if (query) {
-        found++;
-      }
+    } else if (text.includes(query)) {
+
+      card.style.display = '';
+      found++;
 
     } else {
 
@@ -460,14 +512,6 @@ function searchMenu() {
 
     }
   });
-
-
-  /*
-    Search result message is optional.
-    Works whether or not #menuSearchResults exists.
-  */
-
-  const result = $('#menuSearchResults');
 
   if (result) {
 
@@ -478,31 +522,38 @@ function searchMenu() {
     } else if (found) {
 
       result.innerHTML =
-        `<p class="search-found">${found} menu item found</p>`;
+        `<p class="search-found">
+          ${found} menu item${found > 1 ? 's' : ''} found
+        </p>`;
 
     } else {
 
       result.innerHTML =
-        `<p class="search-not-found">No menu item found.</p>`;
+        `<p class="search-not-found">
+          No menu item found.
+        </p>`;
 
     }
   }
 }
 
-
 function clearMenuSearch() {
 
-  const input = $('#menuSearch');
+  const input =
+    document.getElementById('menuSearch');
 
   if (input) {
     input.value = '';
   }
 
-  $$('.food-card').forEach(card => {
-    card.style.display = '';
-  });
+  document
+    .querySelectorAll('.food-card')
+    .forEach(card => {
+      card.style.display = '';
+    });
 
-  const result = $('#menuSearchResults');
+  const result =
+    document.getElementById('menuSearchResults');
 
   if (result) {
     result.innerHTML = '';
@@ -522,14 +573,11 @@ function openItem(item) {
         (DATA.settings.addonGroups || [])
           .find(g => g.id === id)
       )
-      .filter(g =>
-        g &&
-        g.active !== false
+      .filter(
+        g => g && g.active !== false
       );
 
-
   let addonHtml = '';
-
 
   if (groups.length) {
 
@@ -538,90 +586,88 @@ function openItem(item) {
 
         <div class="addon-section-title">
           <span>➕ Customize Your Order</span>
-          <small>Choose options if you want</small>
+          <small>
+            Choose options if you want
+          </small>
         </div>
 
-        ${
-          groups.map(g => `
+        ${groups.map(g => `
 
-            <div class="addon-group">
+          <div class="addon-group">
 
-              <div class="addon-group-title">
+            <div class="addon-group-title">
 
-                <div>
-                  <h3>${g.name}</h3>
-                  <small>${g.description || ''}</small>
-                </div>
-
-                <span class="addon-rule">
-                  ${g.required ? 'Required' : 'Optional'}
-                  ·
-                  ${
-                    g.selection === 'multiple'
-                      ? 'Choose multiple'
-                      : 'Choose one'
-                  }
-                </span>
-
+              <div>
+                <h3>${g.name}</h3>
+                <small>
+                  ${g.description || ''}
+                </small>
               </div>
 
-              <div class="addon-choice-list">
-
+              <span class="addon-rule">
+                ${g.required ? 'Required' : 'Optional'}
+                ·
                 ${
-                  (g.options || [])
-                    .filter(o => o.active !== false)
-                    .map(o => `
-
-                      <button
-                        type="button"
-                        class="addon-choice"
-                        data-group="${g.id}"
-                        data-mode="${
-                          g.selection === 'multiple'
-                            ? 'multiple'
-                            : 'single'
-                        }"
-                        data-price="${Number(o.price || 0)}"
-                        data-name="${String(o.name)
-                          .replace(/"/g, '&quot;')}"
-                        onclick="selectAddonChoice(this)"
-                      >
-
-                        <span>
-                          ${
-                            g.selection === 'multiple'
-                              ? '☐'
-                              : '○'
-                          }
-                        </span>
-
-                        <b>${o.name}</b>
-
-                        <em>
-                          ${
-                            Number(o.price || 0)
-                              ? '+' + money(o.price)
-                              : 'Included'
-                          }
-                        </em>
-
-                      </button>
-
-                    `).join('')
-
-                  || `
-                    <div class="empty">
-                      No active options in this group.
-                    </div>
-                  `
+                  g.selection === 'multiple'
+                    ? 'Choose multiple'
+                    : 'Choose one'
                 }
-
-              </div>
+              </span>
 
             </div>
 
-          `).join('')
-        }
+            <div class="addon-choice-list">
+
+              ${
+                (g.options || [])
+                  .filter(o => o.active !== false)
+                  .map(o => `
+
+                    <button
+                      type="button"
+                      class="addon-choice"
+                      data-group="${g.id}"
+                      data-mode="${
+                        g.selection === 'multiple'
+                          ? 'multiple'
+                          : 'single'
+                      }"
+                      data-price="${Number(o.price || 0)}"
+                      data-name="${String(o.name).replace(/"/g, '&quot;')}"
+                      onclick="selectAddonChoice(this)"
+                    >
+
+                      <span>
+                        ${
+                          g.selection === 'multiple'
+                            ? '☐'
+                            : '○'
+                        }
+                      </span>
+
+                      <b>
+                        ${o.name}
+                      </b>
+
+                      <em>
+                        ${
+                          Number(o.price || 0)
+                            ? '+' + money(o.price)
+                            : 'Included'
+                        }
+                      </em>
+
+                    </button>
+
+                  `).join('') ||
+                  '<div class="empty">No active options in this group.</div>'
+              }
+
+            </div>
+
+          </div>
+
+        `).join('')}
 
       </div>
     `;
@@ -635,24 +681,26 @@ function openItem(item) {
 
           <div class="addon-section-title">
             <span>Choose Add-on</span>
-            <small>Legacy item options</small>
+            <small>
+              Legacy item options
+            </small>
           </div>
 
           <div class="addon-list">
 
-            ${
-              item.addons.map(a => `
-                <button
-                  class="addon"
-                  data-name="${String(a)
-                    .replace(/"/g, '&quot;')}"
-                  data-price="0"
-                  onclick="this.classList.toggle('selected')"
-                >
-                  ${a}
-                </button>
-              `).join('')
-            }
+            ${item.addons.map(a => `
+
+              <button
+                type="button"
+                class="addon"
+                data-name="${String(a).replace(/"/g, '&quot;')}"
+                data-price="0"
+                onclick="this.classList.toggle('selected')"
+              >
+                ${a}
+              </button>
+
+            `).join('')}
 
           </div>
 
@@ -661,18 +709,64 @@ function openItem(item) {
       : '';
 
 
-  const itemJson = JSON.stringify(item)
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, '&#39;');
+  const variantsHtml =
+    item.variants?.length
+      ? `
+        <div class="variant-list">
+
+          ${item.variants.map((v, i) => `
+
+            <button
+              type="button"
+              class="variant ${
+                i === 0 ? 'selected' : ''
+              }"
+              data-price="${v.price}"
+              onclick="selectVariant(this)"
+            >
+
+              <span>
+                ${v.name}
+              </span>
+
+              <b>
+                ${money(v.price)}
+              </b>
+
+            </button>
+
+          `).join('')}
+
+        </div>
+      `
+      : `
+        <input
+          type="hidden"
+          id="singlePrice"
+          value="${item.price || 0}"
+        >
+      `;
 
 
-  $('#itemModalBody').innerHTML = `
+  const modalBody =
+    $('#itemModalBody');
+
+  if (!modalBody) return;
+
+
+  modalBody.innerHTML = `
 
     <span class="eyebrow">
-      ${item.variants ? 'CHOOSE VARIANT' : 'ADD TO CART'}
+      ${
+        item.variants?.length
+          ? 'CHOOSE VARIANT'
+          : 'ADD TO CART'
+      }
     </span>
 
-    <h2>${item.name || ''}</h2>
+    <h2>
+      ${item.name}
+    </h2>
 
     <p>
       ${
@@ -681,40 +775,7 @@ function openItem(item) {
       }
     </p>
 
-    ${
-      item.variants
-        ? `
-          <div class="variant-list">
-
-            ${
-              item.variants.map((v, i) => `
-                <button
-                  type="button"
-                  class="variant ${
-                    i === 0 ? 'selected' : ''
-                  }"
-                  data-price="${v.price}"
-                  onclick="selectVariant(this)"
-                >
-
-                  <span>${v.name}</span>
-
-                  <b>${money(v.price)}</b>
-
-                </button>
-              `).join('')
-            }
-
-          </div>
-        `
-        : `
-          <input
-            type="hidden"
-            id="singlePrice"
-            value="${item.price || 0}"
-          >
-        `
-    }
+    ${variantsHtml}
 
     ${addonHtml}
 
@@ -728,7 +789,8 @@ function openItem(item) {
 
       <button
         class="btn purple full"
-        onclick='confirmAdd(${itemJson})'
+        type="button"
+        onclick='confirmAdd(${JSON.stringify(item).replace(/'/g, '&#39;')})'
       >
         Add to Cart
       </button>
@@ -736,10 +798,8 @@ function openItem(item) {
     </div>
   `;
 
-
-  $('#itemModal').classList.add('show');
+  $('#itemModal')?.classList.add('show');
 }
-
 
 function selectVariant(el) {
 
@@ -751,10 +811,10 @@ function selectVariant(el) {
   el.classList.add('selected');
 }
 
-
 function selectAddonChoice(el) {
 
-  const mode = el.dataset.mode;
+  const mode =
+    el.dataset.mode;
 
   if (mode === 'single') {
 
@@ -764,17 +824,18 @@ function selectAddonChoice(el) {
 
       x.classList.remove('selected');
 
-      const span = x.querySelector('span');
+      const span =
+        x.querySelector('span');
 
       if (span) {
         span.textContent = '○';
       }
-
     });
 
     el.classList.add('selected');
 
-    const span = el.querySelector('span');
+    const span =
+      el.querySelector('span');
 
     if (span) {
       span.textContent = '●';
@@ -784,7 +845,8 @@ function selectAddonChoice(el) {
 
     el.classList.toggle('selected');
 
-    const span = el.querySelector('span');
+    const span =
+      el.querySelector('span');
 
     if (span) {
       span.textContent =
@@ -795,14 +857,8 @@ function selectAddonChoice(el) {
   }
 }
 
-
 function closeItem() {
-
-  const modal = $('#itemModal');
-
-  if (modal) {
-    modal.classList.remove('show');
-  }
+  $('#itemModal')?.classList.remove('show');
 }
 
 
@@ -815,19 +871,20 @@ function confirmAdd(item) {
   let variant = '';
   let price = Number(item.price || 0);
 
-
   if (item.variants?.length) {
 
-    const v =
+    const selected =
       $('#itemModal .variant.selected');
 
     variant =
-      v?.querySelector('span')?.textContent ||
+      selected
+        ?.querySelector('span')
+        ?.textContent ||
       item.variants[0].name;
 
     price =
       Number(
-        v?.dataset.price ||
+        selected?.dataset.price ||
         item.variants[0].price
       );
   }
@@ -839,9 +896,8 @@ function confirmAdd(item) {
         (DATA.settings.addonGroups || [])
           .find(g => g.id === id)
       )
-      .filter(g =>
-        g &&
-        g.active !== false
+      .filter(
+        g => g && g.active !== false
       );
 
 
@@ -862,18 +918,18 @@ function confirmAdd(item) {
 
 
   const addons =
-    [
-      ...$$('#itemModal .addon-choice.selected')
-    ].map(x => ({
+    [...$$(
+      '#itemModal .addon-choice.selected'
+    )].map(x => ({
       name: x.dataset.name,
       price: Number(x.dataset.price || 0)
     }));
 
 
   const legacy =
-    [
-      ...$$('#itemModal .addon.selected')
-    ].map(x => ({
+    [...$$(
+      '#itemModal .addon.selected'
+    )].map(x => ({
       name:
         x.dataset.name ||
         x.textContent.trim(),
@@ -887,8 +943,8 @@ function confirmAdd(item) {
 
   const addonTotal =
     addons.reduce(
-      (s, a) =>
-        s + Number(a.price || 0),
+      (sum, a) =>
+        sum + Number(a.price || 0),
       0
     );
 
@@ -940,18 +996,19 @@ function renderCart() {
 
   const count =
     cart.reduce(
-      (s, x) =>
-        s + x.qty,
+      (sum, item) =>
+        sum + item.qty,
       0
     );
 
-
   if ($('#cartCount')) {
-    $('#cartCount').textContent = count;
+    $('#cartCount').textContent =
+      count;
   }
 
   if ($('#drawerCount')) {
-    $('#drawerCount').textContent = count;
+    $('#drawerCount').textContent =
+      count;
   }
 
 
@@ -970,11 +1027,12 @@ function renderCart() {
 
             <div class="cart-info">
 
-              <h4>${x.name}</h4>
+              <h4>
+                ${x.name}
+              </h4>
 
               <small>
                 ${x.variant || ''}
-
                 ${
                   x.addons?.length
                     ? ' · ' +
@@ -992,15 +1050,19 @@ function renderCart() {
               <div class="qty">
 
                 <button
-                  onclick="changeQty(${i},-1)"
+                  type="button"
+                  onclick="changeQty(${i}, -1)"
                 >
                   −
                 </button>
 
-                <b>${x.qty}</b>
+                <b>
+                  ${x.qty}
+                </b>
 
                 <button
-                  onclick="changeQty(${i},1)"
+                  type="button"
+                  onclick="changeQty(${i}, 1)"
                 >
                   +
                 </button>
@@ -1017,6 +1079,7 @@ function renderCart() {
 
               <button
                 class="remove"
+                type="button"
                 onclick="removeItem(${i})"
               >
                 🗑
@@ -1040,29 +1103,22 @@ function renderCart() {
 
   const sub =
     cart.reduce(
-      (s, x) =>
-        s + x.price * x.qty,
+      (sum, x) =>
+        sum + x.price * x.qty,
       0
     );
 
-
   const discount =
     sub *
-    (
-      Number(
-        DATA.settings.discountPercent || 15
-      ) / 100
-    );
-
+    (Number(
+      DATA.settings.discountPercent || 15
+    ) / 100);
 
   const gst =
     (sub - discount) *
-    (
-      Number(
-        DATA.settings.gstPercent || 5
-      ) / 100
-    );
-
+    (Number(
+      DATA.settings.gstPercent || 5
+    ) / 100);
 
   const total =
     sub -
@@ -1090,16 +1146,22 @@ function renderCart() {
       </div>
 
       <div class="sum">
+
         <span>
           GST (${DATA.settings.gstPercent || 5}%)
         </span>
 
-        <b>${money(gst)}</b>
+        <b>
+          ${money(gst)}
+        </b>
+
       </div>
 
       <div class="sum total">
 
-        <span>Items Total</span>
+        <span>
+          Items Total
+        </span>
 
         <b style="color:var(--purple)">
           ${money(total)}
@@ -1110,10 +1172,10 @@ function renderCart() {
       <small style="color:#857686">
         Container charges are shown at checkout.
       </small>
+
     `;
   }
 }
-
 
 function changeQty(i, d) {
 
@@ -1128,7 +1190,6 @@ function changeQty(i, d) {
   renderCart();
 }
 
-
 function removeItem(i) {
 
   cart.splice(i, 1);
@@ -1136,14 +1197,12 @@ function removeItem(i) {
   renderCart();
 }
 
-
 function openCart() {
 
   $('#cartDrawer')?.classList.add('open');
 
   $('#overlay')?.classList.add('show');
 }
-
 
 function closeCart() {
 
@@ -1171,31 +1230,25 @@ function goCheckout() {
   $('#checkoutModal')?.classList.add('show');
 }
 
-
 function closeCheckout() {
 
   $('#checkoutModal')?.classList.remove('show');
 }
 
-
 function renderCheckout() {
 
   const sub =
     cart.reduce(
-      (s, x) =>
-        s + x.price * x.qty,
+      (sum, x) =>
+        sum + x.price * x.qty,
       0
     );
 
-
   const baseDiscount =
     sub *
-    (
-      Number(
-        DATA.settings.discountPercent || 15
-      ) / 100
-    );
-
+    (Number(
+      DATA.settings.discountPercent || 15
+    ) / 100);
 
   const gst =
     (
@@ -1209,11 +1262,10 @@ function renderCheckout() {
       ) / 100
     );
 
-
   const container =
     cart.reduce(
-      (s, x) =>
-        s +
+      (sum, x) =>
+        sum +
         (
           Number(
             x.containerCharge ??
@@ -1223,7 +1275,6 @@ function renderCheckout() {
         ),
       0
     );
-
 
   const total =
     sub -
@@ -1257,7 +1308,11 @@ function renderCheckout() {
 
       <span>
         Coupon
-        ${appliedCoupon ? '(' + appliedCoupon + ')' : ''}
+        ${
+          appliedCoupon
+            ? '(' + appliedCoupon + ')'
+            : ''
+        }
       </span>
 
       <b>
@@ -1284,7 +1339,9 @@ function renderCheckout() {
 
     <div class="sum">
 
-      <span>Container</span>
+      <span>
+        Container
+      </span>
 
       <b>
         ${money(container)}
@@ -1294,13 +1351,16 @@ function renderCheckout() {
 
     <div class="sum total">
 
-      <span>Payable</span>
+      <span>
+        Payable
+      </span>
 
       <b style="color:var(--purple)">
         ${money(total)}
       </b>
 
     </div>
+
   `;
 }
 
@@ -1311,31 +1371,32 @@ function renderCheckout() {
 
 function applyCoupon() {
 
-  const input = $('#couponCode');
+  const input =
+    $('#couponCode');
 
   const code =
     (input?.value || '')
       .trim()
       .toUpperCase();
 
-
   const sub =
     cart.reduce(
-      (s, x) =>
-        s + x.price * x.qty,
+      (sum, x) =>
+        sum + x.price * x.qty,
       0
     );
 
 
-  const c =
+  const coupon =
     (DATA.coupons || [])
-      .find(x =>
-        x.active !== false &&
-        String(x.code).toUpperCase() === code
+      .find(
+        x =>
+          x.active !== false &&
+          String(x.code).toUpperCase() === code
       );
 
 
-  if (!c) {
+  if (!coupon) {
 
     couponDiscount = 0;
     appliedCoupon = '';
@@ -1358,7 +1419,7 @@ function applyCoupon() {
 
   if (
     sub <
-    Number(c.minOrder || 0)
+    Number(coupon.minOrder || 0)
   ) {
 
     couponDiscount = 0;
@@ -1368,7 +1429,7 @@ function applyCoupon() {
 
       $('#couponStatus').textContent =
         'Minimum order for this coupon is ' +
-        money(c.minOrder);
+        money(coupon.minOrder);
 
       $('#couponStatus').className =
         'coupon-bad';
@@ -1381,19 +1442,17 @@ function applyCoupon() {
 
 
   couponDiscount =
-    c.type === 'flat'
-
+    coupon.type === 'flat'
       ? Math.min(
           sub,
-          Number(c.value || 0)
+          Number(coupon.value || 0)
         )
-
       : sub *
-        Number(c.value || 0) /
+        Number(coupon.value || 0) /
         100;
 
-
-  appliedCoupon = c.code;
+  appliedCoupon =
+    coupon.code;
 
 
   if ($('#couponStatus')) {
@@ -1413,9 +1472,6 @@ function applyCoupon() {
 /* =========================
    LOCATION
 ========================= */
-
-let customerLocation = '';
-
 
 function getLocation() {
 
@@ -1438,17 +1494,15 @@ function getLocation() {
 
   navigator.geolocation.getCurrentPosition(
 
-    p => {
+    position => {
 
       customerLocation =
-        `https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`;
-
+        `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
 
       if ($('#locationStatus')) {
         $('#locationStatus').textContent =
           'Current location added ✓';
       }
-
     },
 
     () => {
@@ -1457,288 +1511,324 @@ function getLocation() {
         $('#locationStatus').textContent =
           'Could not get location. Please enter address manually.';
       }
-
     }
   );
 }
 
 
 /* =========================
-   CHECKOUT FORM
+   ONLINE ORDER
 ========================= */
 
-function setupCheckoutForm() {
+async function submitCheckout(e) {
 
-  const form = $('#checkoutForm');
+  e.preventDefault();
 
-  if (!form) return;
+  const form =
+    e.target;
 
-
-  form.addEventListener(
-    'submit',
-    async e => {
-
-      e.preventDefault();
+  const f =
+    new FormData(form);
 
 
-      const f =
-        new FormData(e.target);
+  const sub =
+    cart.reduce(
+      (sum, x) =>
+        sum + x.price * x.qty,
+      0
+    );
 
 
-      const sub =
-        cart.reduce(
-          (s, x) =>
-            s + x.price * x.qty,
-          0
-        );
+  const discount =
+    sub *
+    Number(
+      DATA.settings.discountPercent || 15
+    ) /
+    100;
 
 
-      const discount =
-        sub *
-        Number(
-          DATA.settings.discountPercent || 15
-        ) /
-        100;
+  const gst =
+    (
+      sub -
+      discount -
+      couponDiscount
+    ) *
+    Number(
+      DATA.settings.gstPercent || 5
+    ) /
+    100;
 
 
-      const gst =
+  const container =
+    cart.reduce(
+      (sum, x) =>
+        sum +
         (
-          sub -
-          discount -
-          couponDiscount
-        ) *
-        Number(
-          DATA.settings.gstPercent || 5
-        ) /
-        100;
+          Number(
+            x.containerCharge ??
+            DATA.settings.defaultContainerCharge ??
+            0
+          ) * x.qty
+        ),
+      0
+    );
 
 
-      const container =
-        cart.reduce(
-          (s, x) =>
-            s +
-            (
-              Number(
-                x.containerCharge ??
-                DATA.settings.defaultContainerCharge ??
-                0
-              ) * x.qty
-            ),
-          0
-        );
+  const total =
+    sub -
+    discount -
+    couponDiscount +
+    gst +
+    container;
 
 
-      const total =
-        sub -
-        discount -
-        couponDiscount +
-        gst +
-        container;
+  const customer = {
+
+    name: f.get('name'),
+
+    phone: f.get('phone'),
+
+    address: f.get('address'),
+
+    landmark: f.get('landmark'),
+
+    location: customerLocation
+  };
 
 
-      const customer = {
+  const order = {
 
-        name: f.get('name'),
+    customer,
 
-        phone: f.get('phone'),
+    items: cart,
 
-        address: f.get('address'),
+    subtotal: sub,
 
-        landmark: f.get('landmark'),
+    discount,
 
-        location: customerLocation
-      };
+    couponDiscount,
 
+    coupon: appliedCoupon,
 
-      const order = {
+    gst,
 
-        customer,
+    containerCharge: container,
 
-        items: cart,
-
-        subtotal: sub,
-
-        discount,
-
-        gst,
-
-        containerCharge: container,
-
-        total
-      };
+    total
+  };
 
 
-      try {
+  try {
 
-        const r =
-          await fetch(
-            '/api/orders',
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type':
-                  'application/json'
-              },
-              body:
-                JSON.stringify(order)
-            }
-          );
-
-
-        const data =
-          await r.json();
+    const r =
+      await fetch(
+        '/api/orders',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+          body:
+            JSON.stringify(order)
+        }
+      );
 
 
-        let text =
-          `*WASABEE NEW ONLINE ORDER*\n` +
-          `Order: ${data.orderId}\n\n` +
-
-          `*Customer*\n` +
-          `Name: ${customer.name}\n` +
-          `Phone: ${customer.phone}\n` +
-          `Address: ${customer.address}\n` +
-          `Landmark: ${customer.landmark || '-'}\n` +
-          `Location: ${customerLocation || '-'}\n\n` +
-
-          `*Items*\n`;
+    const data =
+      await r.json();
 
 
-        cart.forEach(x => {
+    let text =
+      `*WASABEE NEW ONLINE ORDER*\n`;
 
-          text +=
-            `• ${x.name}` +
-            `${x.variant ? ' (' + x.variant + ')' : ''}` +
-            `${
-              x.addons?.length
-                ? ' [' +
-                  x.addons
-                    .map(a =>
-                      typeof a === 'string'
-                        ? a
-                        : a.name
-                    )
-                    .join(', ') +
-                  ']'
-                : ''
-            }` +
-            ` × ${x.qty} = ${money(x.price * x.qty)}\n`;
-        });
+    text +=
+      `Order: ${data.orderId}\n\n`;
 
+    text +=
+      `*Customer*\n`;
+
+    text +=
+      `Name: ${customer.name}\n`;
+
+    text +=
+      `Phone: ${customer.phone}\n`;
+
+    text +=
+      `Address: ${customer.address}\n`;
+
+    text +=
+      `Landmark: ${customer.landmark || '-'}\n`;
+
+    text +=
+      `Location: ${customerLocation || '-'}\n\n`;
+
+    text +=
+      `*Items*\n`;
+
+
+    cart.forEach(x => {
+
+      text +=
+        `• ${x.name}`;
+
+      if (x.variant) {
+        text +=
+          ` (${x.variant})`;
+      }
+
+      if (x.addons?.length) {
 
         text +=
-          `\nSubtotal: ${money(sub)}\n` +
-          `Discount: -${money(discount)}\n` +
-          `Coupon ${appliedCoupon || ''}: -${money(couponDiscount)}\n` +
-          `GST: ${money(gst)}\n` +
-          `Container: ${money(container)}\n` +
-          `*TOTAL: ${money(total)}*`;
-
-
-        window.open(
-          `https://wa.me/${DATA.settings.whatsappNumber}?text=${encodeURIComponent(text)}`,
-          '_blank'
-        );
-
-
-        cart = [];
-
-        couponDiscount = 0;
-
-        appliedCoupon = '';
-
-        renderCart();
-
-        closeCheckout();
-
-        toast('Order sent to WhatsApp ✓');
-
-
-      } catch (err) {
-
-        console.error(err);
-
-        toast('Could not place order. Please try again.');
-
+          ` [${
+            x.addons
+              .map(a =>
+                typeof a === 'string'
+                  ? a
+                  : a.name
+              )
+              .join(', ')
+          }]`;
       }
+
+      text +=
+        ` × ${x.qty} = ${money(
+          x.price * x.qty
+        )}\n`;
+    });
+
+
+    text +=
+      `\nSubtotal: ${money(sub)}\n`;
+
+    text +=
+      `Discount: -${money(discount)}\n`;
+
+    text +=
+      `Coupon ${appliedCoupon || ''}: -${money(couponDiscount)}\n`;
+
+    text +=
+      `GST: ${money(gst)}\n`;
+
+    text +=
+      `Container: ${money(container)}\n`;
+
+    text +=
+      `*TOTAL: ${money(total)}*`;
+
+
+    const whatsapp =
+      DATA.settings.whatsappNumber;
+
+
+    if (whatsapp) {
+
+      window.open(
+        `https://wa.me/${whatsapp}?text=${encodeURIComponent(text)}`,
+        '_blank'
+      );
     }
-  );
+
+
+    cart = [];
+
+    couponDiscount = 0;
+
+    appliedCoupon = '';
+
+    customerLocation = '';
+
+    renderCart();
+
+    closeCheckout();
+
+    toast(
+      'Order sent to WhatsApp ✓'
+    );
+
+
+  } catch (err) {
+
+    console.error(err);
+
+    toast(
+      'Could not place order. Please try again.'
+    );
+  }
 }
 
 
 /* =========================
-   BOOKING
+   TABLE BOOKING
 ========================= */
 
-function setupBookingForm() {
+async function submitBooking(e) {
 
-  const form = $('#bookingForm');
+  e.preventDefault();
 
-  if (!form) return;
+  const f =
+    new FormData(e.target);
 
-
-  form.addEventListener(
-    'submit',
-    async e => {
-
-      e.preventDefault();
-
-
-      const f =
-        new FormData(e.target);
+  const b =
+    Object.fromEntries(
+      f.entries()
+    );
 
 
-      const b =
-        Object.fromEntries(
-          f.entries()
-        );
+  try {
 
-
-      try {
-
-        await fetch(
-          '/api/bookings',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type':
-                'application/json'
-            },
-            body:
-              JSON.stringify(b)
-          }
-        );
-
-
-        const text =
-          `*WASABEE TABLE BOOKING REQUEST*\n` +
-          `Name: ${b.name}\n` +
-          `Phone: ${b.phone}\n` +
-          `Date: ${b.date}\n` +
-          `Time: ${b.time}\n` +
-          `Guests: ${b.guests}\n` +
-          `Notes: ${b.notes || '-'}`;
-
-
-        window.open(
-          `https://wa.me/${DATA.settings.whatsappNumber}?text=${encodeURIComponent(text)}`,
-          '_blank'
-        );
-
-
-        e.target.reset();
-
-        toast('Booking request sent ✓');
-
-
-      } catch (err) {
-
-        console.error(err);
-
-        toast('Could not send booking request.');
-
+    await fetch(
+      '/api/bookings',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type':
+            'application/json'
+        },
+        body:
+          JSON.stringify(b)
       }
+    );
+
+
+    const text =
+      `*WASABEE TABLE BOOKING REQUEST*\n` +
+      `Name: ${b.name}\n` +
+      `Phone: ${b.phone}\n` +
+      `Date: ${b.date}\n` +
+      `Time: ${b.time}\n` +
+      `Guests: ${b.guests}\n` +
+      `Notes: ${b.notes || '-'}`;
+
+
+    const whatsapp =
+      DATA.settings.whatsappNumber;
+
+
+    if (whatsapp) {
+
+      window.open(
+        `https://wa.me/${whatsapp}?text=${encodeURIComponent(text)}`,
+        '_blank'
+      );
     }
-  );
+
+
+    e.target.reset();
+
+    toast(
+      'Booking request sent ✓'
+    );
+
+
+  } catch (err) {
+
+    console.error(err);
+
+    toast(
+      'Booking could not be sent.'
+    );
+  }
 }
 
 
@@ -1755,48 +1845,51 @@ function renderReviews() {
   if ($('#reviewsList')) {
 
     $('#reviewsList').innerHTML =
-
       rs.length
 
-        ? rs.map(r => `
+        ? rs.map(r => {
 
-          <div class="review">
+            const rating =
+              Math.max(
+                0,
+                Math.min(
+                  5,
+                  Number(r.rating || 5)
+                )
+              );
 
-            <div class="stars">
-              ${'★'.repeat(
-                Number(r.rating || 5)
-              )}
+            return `
+              <div class="review">
 
-              ${'☆'.repeat(
-                5 -
-                Number(r.rating || 5)
-              )}
-            </div>
+                <div class="stars">
+                  ${'★'.repeat(rating)}
+                  ${'☆'.repeat(5 - rating)}
+                </div>
 
-            <h4>
-              ${r.name}
-            </h4>
+                <h4>
+                  ${r.name || 'Guest'}
+                </h4>
 
-            <p>
-              ${r.comment}
-            </p>
+                <p>
+                  ${r.comment || ''}
+                </p>
 
-            <small>
-              ${
-                r.createdAt
-                  ? new Date(
-                      r.createdAt
-                    ).toLocaleDateString()
-                  : ''
-              }
-            </small>
+                <small>
+                  ${
+                    r.createdAt
+                      ? new Date(
+                          r.createdAt
+                        ).toLocaleDateString()
+                      : ''
+                  }
+                </small>
 
-          </div>
+              </div>
+            `;
 
-        `).join('')
+          }).join('')
 
         : `
-
           <div class="review">
 
             <div class="stars">
@@ -1812,7 +1905,6 @@ function renderReviews() {
             </p>
 
           </div>
-
         `;
   }
 
@@ -1838,104 +1930,66 @@ function renderReviews() {
 }
 
 
-function setupReviewForm() {
+async function submitReview(e) {
 
-  const form = $('#reviewForm');
+  e.preventDefault();
 
-  if (form) {
-
-    form.addEventListener(
-      'submit',
-      async e => {
-
-        e.preventDefault();
+  const f =
+    new FormData(e.target);
 
 
-        const f =
-          new FormData(e.target);
+  try {
 
+    await fetch(
+      '/api/reviews',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type':
+            'application/json'
+        },
+        body:
+          JSON.stringify({
 
-        try {
+            name:
+              f.get('name'),
 
-          await fetch(
-            '/api/reviews',
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type':
-                  'application/json'
-              },
-              body:
-                JSON.stringify({
-                  name:
-                    f.get('name'),
+            comment:
+              f.get('comment'),
 
-                  comment:
-                    f.get('comment'),
+            rating:
+              window.reviewRating || 5
 
-                  rating:
-                    window.reviewRating || 5
-                })
-            }
-          );
-
-
-          e.target.reset();
-
-          toast(
-            'Thank you for your review ✓'
-          );
-
-
-          const r =
-            await fetch(
-              '/api/public-data'
-            );
-
-
-          DATA =
-            await r.json();
-
-
-          renderReviews();
-
-
-        } catch (err) {
-
-          console.error(err);
-
-          toast(
-            'Could not submit review.'
-          );
-
-        }
+          })
       }
     );
-  }
 
 
-  const stars =
-    $('#starsInput');
+    e.target.reset();
+
+    toast(
+      'Thank you for your review ✓'
+    );
 
 
-  if (stars) {
+    const r =
+      await fetch(
+        '/api/public-data'
+      );
 
-    stars.addEventListener(
-      'click',
-      e => {
+    DATA =
+      await r.json();
 
-        if (
-          e.target.closest(
-            '#starsInput'
-          )
-        ) {
 
-          window.reviewRating = 5;
+    renderReviews();
 
-          stars.style.color =
-            '#d09b00';
-        }
-      }
+
+  } catch (err) {
+
+    console.error(err);
+
+    toast(
+      'Could not submit review.'
     );
   }
 }
@@ -1947,12 +2001,18 @@ function setupReviewForm() {
 
 function jumpCat(id) {
 
-  document
-    .querySelector('#cat-' + id)
-    ?.scrollIntoView({
+  const target =
+    document.querySelector(
+      '#cat-' + id
+    );
+
+  if (target) {
+
+    target.scrollIntoView({
       behavior: 'smooth',
       block: 'start'
     });
+  }
 
 
   $$('.cat').forEach(x =>
@@ -1965,12 +2025,10 @@ function jumpCat(id) {
     event?.currentTarget
   ) {
 
-    event.currentTarget.classList.add(
-      'active'
-    );
+    event.currentTarget
+      .classList.add('active');
   }
 }
-
 
 function toggleNav() {
 
@@ -1980,47 +2038,86 @@ function toggleNav() {
 
 
 /* =========================
-   TOAST
-========================= */
-
-function toast(msg) {
-
-  const t = $('#toast');
-
-  if (!t) return;
-
-  t.className =
-    'toast show';
-
-  t.textContent =
-    msg;
-
-
-  setTimeout(
-    () => {
-      t.className =
-        'toast';
-    },
-    2400
-  );
-}
-
-
-/* =========================
-   START EVERYTHING
+   EVENT LISTENERS
 ========================= */
 
 document.addEventListener(
   'DOMContentLoaded',
   () => {
 
-    setupCheckoutForm();
+    $('#checkoutForm')
+      ?.addEventListener(
+        'submit',
+        submitCheckout
+      );
 
-    setupBookingForm();
 
-    setupReviewForm();
+    $('#bookingForm')
+      ?.addEventListener(
+        'submit',
+        submitBooking
+      );
+
+
+    $('#reviewForm')
+      ?.addEventListener(
+        'submit',
+        submitReview
+      );
+
+
+    $('#starsInput')
+      ?.addEventListener(
+        'click',
+        e => {
+
+          if (
+            e.target.closest('#starsInput')
+          ) {
+
+            window.reviewRating = 5;
+
+            e.currentTarget.style.color =
+              '#d09b00';
+          }
+        }
+      );
+
+
+    const searchInput =
+      $('#menuSearch');
+
+    if (searchInput) {
+
+      searchInput.addEventListener(
+        'input',
+        searchMenu
+      );
+
+      searchInput.addEventListener(
+        'keydown',
+        e => {
+
+          if (e.key === 'Escape') {
+            closeMenuSearch();
+          }
+        }
+      );
+    }
+
+
+    const overlay =
+      $('#overlay');
+
+    if (overlay) {
+
+      overlay.addEventListener(
+        'click',
+        closeCart
+      );
+    }
+
 
     init();
-
   }
 );
