@@ -665,14 +665,164 @@ function getSearchResultElement() {
 }
 
 
-function openMenuSearch() {
+function openMenuSearch(){
+  const input = document.getElementById('menuSearch');
 
-  const modal =
-    document.getElementById('menuSearchModal');
+  if(!input){
+    console.error('Menu search input not found');
+    return;
+  }
 
-  const input =
-    document.getElementById('menuSearch');
+  const orderSection = document.getElementById('order');
 
+  if(orderSection){
+    orderSection.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+
+  setTimeout(() => {
+    input.focus();
+    input.select();
+  }, 500);
+}
+
+
+function closeMenuSearch(){
+  const input = document.getElementById('menuSearch');
+
+  if(input){
+    input.value = '';
+  }
+
+  document.querySelectorAll('.food-card').forEach(card => {
+    card.style.display = '';
+  });
+
+  const result =
+    document.getElementById('menuSearchResult') ||
+    document.getElementById('menuSearchResults');
+
+  if(result){
+    result.innerHTML = '';
+  }
+}
+
+
+function searchMenu(){
+
+  const input = document.getElementById('menuSearch');
+
+  if(!input){
+    return;
+  }
+
+  const query = input.value
+    .trim()
+    .toLowerCase();
+
+  const cards = document.querySelectorAll('.food-card');
+
+  const result =
+    document.getElementById('menuSearchResult') ||
+    document.getElementById('menuSearchResults');
+
+  let found = 0;
+
+  cards.forEach(card => {
+
+    const text = card.innerText.toLowerCase();
+
+    if(!query){
+
+      card.style.display = '';
+      
+    }else if(text.includes(query)){
+
+      card.style.display = '';
+      found++;
+
+    }else{
+
+      card.style.display = 'none';
+
+    }
+
+  });
+
+
+  if(result){
+
+    if(!query){
+
+      result.innerHTML = '';
+
+    }else if(found === 1){
+
+      result.innerHTML =
+        `<p class="search-found">${found} menu item found</p>`;
+
+    }else if(found > 1){
+
+      result.innerHTML =
+        `<p class="search-found">${found} menu items found</p>`;
+
+    }else{
+
+      result.innerHTML =
+        `<p class="search-not-found">No menu item found.</p>`;
+
+    }
+
+  }
+
+}
+
+
+function clearMenuSearch(){
+
+  const input = document.getElementById('menuSearch');
+
+  if(input){
+    input.value = '';
+    input.focus();
+  }
+
+  document.querySelectorAll('.food-card').forEach(card => {
+    card.style.display = '';
+  });
+
+  const result =
+    document.getElementById('menuSearchResult') ||
+    document.getElementById('menuSearchResults');
+
+  if(result){
+    result.innerHTML = '';
+  }
+
+}
+
+
+document.addEventListener('DOMContentLoaded', function(){
+
+  const input = document.getElementById('menuSearch');
+
+  if(input){
+
+    input.addEventListener('input', searchMenu);
+
+    input.addEventListener('keydown', function(e){
+
+      if(e.key === 'Escape'){
+        clearMenuSearch();
+      }
+
+    });
+
+  }
+
+});
 
   /*
     If you already have a search modal in HTML,
