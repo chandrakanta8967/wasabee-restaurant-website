@@ -3,4 +3,60 @@
 .about-story{background:#fff}.story-grid,.experience-grid{display:grid;grid-template-columns:1fr 1fr;gap:35px;align-items:center}.story-image,.chef-image{min-height:360px;border-radius:24px;background-size:cover;background-position:center;box-shadow:var(--shadow)}.story-image{background-image:linear-gradient(135deg,rgba(128,0,128,.12),rgba(0,0,0,.05)),url('https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1000&q=80')}.chef-image{background-image:linear-gradient(135deg,rgba(128,0,128,.15),rgba(0,0,0,.12)),url('https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=1000&q=80')}.story-stats{display:flex;gap:35px;margin-top:25px}.story-stats div{display:flex;flex-direction:column}.story-stats b{font-size:26px;color:var(--purple)}.story-stats span{font-size:12px;color:var(--muted)}.gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.gimg{height:190px;border-radius:18px;background-size:cover;background-position:center}.g1{background-image:url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=700&q=80')}.g2{background-image:url('https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=700&q=80')}.g3{background-image:url('https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=700&q=80')}.g4{background-image:url('https://images.unsplash.com/photo-1559314809-0d155014e29e?auto=format&fit=crop&w=700&q=80')}.g5{background-image:url('https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=700&q=80')}.g6{background-image:url('https://images.unsplash.com/photo-1563379926898-05f4575a45d8?auto=format&fit=crop&w=700&q=80')}.g7{background-image:url('https://images.unsplash.com/photo-1541544741938-0af808871cc0?auto=format&fit=crop&w=700&q=80')}.g8{background-image:url('https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=700&q=80')}.offers{padding-top:0}.offer-box{background:linear-gradient(135deg,#1b071b,#5d005d);color:#fff;border-radius:24px;padding:30px 36px;display:flex;align-items:center;justify-content:space-between;gap:25px}.offer-box p{color:#eaddea;max-width:700px}.experience{background:#fff}@media(max-width:760px){.story-grid,.experience-grid{grid-template-columns:1fr}.story-image,.chef-image{min-height:260px}.gallery-grid{grid-template-columns:repeat(2,1fr)}.gimg{height:145px}.offer-box{display:block}.offer-box .btn{margin-top:12px}}
 .coupon-row{display:flex;gap:8px;align-items:center}.coupon-row input{flex:1}.coupon-row .btn{white-space:nowrap}.coupon-ok{color:#18864a;font-weight:700;font-size:13px}.coupon-bad{color:#b21e2b;font-weight:700;font-size:13px}
 /* Premium add-on selector */
-.addon-section{margin-top:20px;padding:16px;border:1px solid #eadbea;border-radius:16px;background:#fffafd}.addon-section-title{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px;font-weight:900}.addon-section-title small{font-size:11px;color:#7b6c7b;font-weight:600}.addon-group{border-top:1px solid #eee5ef;padding-top:13px;margin-top:13px}.addon-group-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}.addon-group-title h3{margin:0;font-size:15px}.addon-group-title small{color:#7b6c7b;font-size:11px}.addon-rule{font-size:10px;color:#800080;background:#f6eafa;padding:5px 8px;border-radius:99px;white-space:nowrap}.addon-choice-list{display:grid;gap:8px}.addon-choice{display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:8px;width:100%;text-align:left;border:1px solid #e6dce8;background:#fff;border-radius:11px;padding:11px 12px;color:#281f29}.addon-choice span{font-size:17px;color:#8a6c8c}.addon-choice b{font-size:13px}.addon-choice em{font-style:normal;font-size:11px;color:#777}.addon-choice.selected{border-color:#a66aa7;background:#faf1fb;box-shadow:0 0 0 2px rgba(128,0,128,.08)}.addon-choice.selected span{color:#800080}.modal-price-note{margin-top:12px;color:#756a76;font-size:11px;background:#f8f5f8;padding:9px 11px;border-radius:9px}.addon.selected{border-color:#800080;background:#f8eff8}
+.addon-section{margin-top:20px;padding:16px;border:1px solid #eadbea;border-radius:16px;background:#fffafd}.addon-section-title{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px;font-weight:900}.addon-section-title small{font-size:11px;color:#7b6c7b;font-weight:600}.addon-group{border-top:1px solid #eee5ef;padding-top:13px;margin-top:13px}.addon-group-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}.addon-group-title h3{margin:0;font-size:15px}.addon-group-title small{color:#7b6c7b;font-size:11px}.addon-rule{font-size:10px;color:#800080;background:#f6eafa;padding:5px 8px;border-radius:99px;white-space:nowrap}.addon-choice-list{display:grid;gap:8px}.addon-choice{display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:8px;width:100%;text-align:left;border:1px solid #e6dce8;background:#fff;border-radius:11px;padding:11px 12px;color:#281f29}.addon-choice span{font-size:17px;color:#8a6c8c}.addon-choice b{font-size:13px}.addon-choice em{font-style:normal;font-size:11px;color:#777}.addon-choice.selected{border-color:#a66aa7;background:#faf1fb;box-shadow:0 0 0 2px rgba(128,0,128,.08)}.addon-choice.selected span{color:#800080}.modal-price-note{margin-top:12px;color:#756a76;font-size:11px;background:#f8f5f8;padding:9px 11px;border-radius:9px}.addon.selected{border-color:#800080;background:#f8eff8}.menu-search-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.65);
+  display:none;
+  align-items:flex-start;
+  justify-content:center;
+  padding-top:110px;
+  z-index:9999;
+}
+
+.menu-search-modal.show{
+  display:flex;
+}
+
+.menu-search-card{
+  width:min(600px,92%);
+  background:#fff;
+  border-radius:18px;
+  padding:28px;
+  position:relative;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+
+.menu-search-card h2{
+  margin:0 0 18px;
+}
+
+.menu-search-card input{
+  width:100%;
+  box-sizing:border-box;
+  padding:15px 18px;
+  border:1px solid #ddd;
+  border-radius:10px;
+  font-size:16px;
+  outline:none;
+}
+
+.menu-search-card input:focus{
+  border-color:#a000a8;
+}
+
+.menu-search-close{
+  position:absolute;
+  top:12px;
+  right:15px;
+  border:0;
+  background:none;
+  font-size:28px;
+  cursor:pointer;
+}
+
+.search-found,
+.search-not-found{
+  margin:15px 0 0;
+  font-size:14px;
+}
