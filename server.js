@@ -3,7 +3,6 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const url = require('url');
-const sessions = new Set();
 const PORT=process.env.PORT||3000;
 const ROOT=__dirname;
 const DATA=path.join(ROOT,'data');
@@ -442,24 +441,21 @@ if(req.method==='POST'&&p==='/api/admin/login'){
   try{
     const b=await body(req);
     const entered=String(b.password||'').trim();
-
-    // TEMPORARY ADMIN PASSWORD
-    const expected='wasabee-admin';
+    const expected=String(process.env.ADMIN_PASSWORD||'wasabee-admin').trim();
 
     if(entered!==expected){
       return send(res,401,{error:'Wrong password'});
     }
 
-    const t=crypto.randomBytes(24).toString('hex');
-    sessions.add(t);
+    const token=makeAdminToken();
 
-    return send(res,200,{token:t});
+    return send(res,200,{token});
   }catch(e){
     console.error('LOGIN ERROR:',e);
     return send(res,500,{error:'Login error'});
   }
-
 }
+
   // =========================
   // ADMIN AUTH
   // =========================
