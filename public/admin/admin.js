@@ -953,183 +953,365 @@ await refreshAll();
 }
 
 let menuView='items';
+let menuSearch='';
 
 function renderMenu(){
 
-const active=menuView;
+  const active=menuView;
+  const q=String(menuSearch||'').trim().toLowerCase();
 
-let html=`
+  let html=`
+    <div class="toolbar menu-toolbar">
 
-<div class="toolbar menu-toolbar">
+      <div>
+        <span class="eyebrow">
+          MENU CONTROL CENTER
+        </span>
 
-<div>
+        <h3>Menu Manager</h3>
 
-<span class="eyebrow">
-MENU CONTROL CENTER
-</span>
+        <p class="muted">
+          Manage menu items, categories, variants, prices,
+          food images, visibility, container charges and add-ons
+          from one place.
+        </p>
+      </div>
 
-<h3>Menu Manager</h3>
+      <div class="toolbar-actions">
 
-<p class="muted">
-Manage menu items, categories, variants, prices,
-food images, visibility, container charges and add-ons
-from one place.
-</p>
+        ${active==='items'?
+        `<button class="primary" onclick="addItem(0)">
+          + Add Item
+        </button>`:''}
 
-</div>
+        <button class="small-btn" onclick="addCategory()">
+          + Add Category
+        </button>
 
-<div class="toolbar-actions">
+      </div>
 
-${active==='items'?
-`<button class="primary"
-onclick="addItem(0)">
-+ Add Item
-</button>`:''}
+    </div>
+  `;
 
-<button class="small-btn"
-onclick="addCategory()">
-+ Add Category
-</button>
+  html+=`
+    <div class="menu-tabs">
 
-</div>
+      <button
+        class="menu-tab ${active==='items'?'active':''}"
+        onclick="setMenuView('items')">
 
-</div>
-`;
+        🍜 Items
+        <small>Edit dishes & prices</small>
 
-html+=`
+      </button>
 
-<div class="menu-tabs">
+      <button
+        class="menu-tab ${active==='categories'?'active':''}"
+        onclick="setMenuView('categories')">
 
-<button
-class="menu-tab ${active==='items'?'active':''}"
-onclick="setMenuView('items')">
+        📂 Categories
+        <small>Organise your menu</small>
 
-🍜 Items
-<small>Edit dishes & prices</small>
+      </button>
 
-</button>
+      <button
+        class="menu-tab ${active==='addons'?'active':''}"
+        onclick="setMenuView('addons')">
 
-<button
-class="menu-tab ${active==='categories'?'active':''}"
-onclick="setMenuView('categories')">
+        ➕ Add-ons
+        <small>Sauces & extras</small>
 
-📂 Categories
-<small>Organise your menu</small>
+      </button>
 
-</button>
+    </div>
+  `;
 
-<button
-class="menu-tab ${active==='addons'?'active':''}"
-onclick="setMenuView('addons')">
+  if(active==='addons')
+    return $('#menu').innerHTML=
+      html+renderAddonGroups();
 
-➕ Add-ons
-<small>Sauces & extras</small>
+  if(active==='categories')
+    return $('#menu').innerHTML=
+      html+renderCategories();
 
-</button>
 
-</div>
-`;
+  /* =========================
+     MENU SEARCH
+  ========================= */
 
-if(active==='addons')
-return $('#menu').innerHTML=
-html+renderAddonGroups();
+  html+=`
+    <div style="
+      margin:18px 0;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    ">
 
-if(active==='categories')
-return $('#menu').innerHTML=
-html+renderCategories();
+      <input
+        id="menuSearch"
+        class="search"
+        type="search"
+        placeholder="🔍 Search menu item, category, variant..."
+        value="${esc(menuSearch)}"
+        style="
+          width:100%;
+          max-width:520px;
+          padding:14px 16px;
+          font-size:16px;
+        "
+      >
 
-html+=`
+      ${
+        q
+        ? `<button
+             class="small-btn"
+             onclick="menuSearch='';renderMenu()">
+             Clear
+           </button>`
+        : ''
+      }
 
-<div class="helper-card">
+    </div>
+  `;
 
-<b>How to use:</b>
 
-Click <strong>Edit</strong> on any dish
-→ choose variants
-→ assign one or more
-<strong>Add-on Groups</strong>.
+  html+=`
+    <div class="helper-card">
 
-Customers will then see those choices
-before adding the dish to cart.
+      <b>How to use:</b>
 
-</div>
-`;
+      Click <strong>Edit</strong> on any dish
+      → choose variants
+      → assign one or more
+      <strong>Add-on Groups</strong>.
 
-(D.menu||[]).forEach((c,ci)=>{
+      Customers will then see those choices
+      before adding the dish to cart.
 
-html+=`
+    </div>
+  `;
 
-<div class="category-block">
 
-<div class="cat-head">
+  let found=0;
 
-<div>
 
-<h3>
-${c.icon||'🍽️'}
-${esc(c.name)}
-</h3>
+  /* =========================
+     MENU ITEMS
+  ========================= */
 
-<span class="muted">
-${(c.items||[]).length} item(s)
-</span>
+  (D.menu||[]).forEach((c,ci)=>{
 
-</div>
+    const categoryName=String(c.name||'').toLowerCase();
 
-<div>
+    const normalItems=(c.items||[]).filter(x=>{
 
-<button class="small-btn"
-onclick="addItem(${ci})">
-+ Add Item
-</button>
+      if(!q)return true;
 
-<button class="small-btn danger"
-onclick="deleteCategory(${ci})">
-Delete Category
-</button>
+      const text=JSON.stringify({
+        name:x.name,
+        description:x.description,
+        variants:x.variants,
+        addons:x.addons,
+        category:c.name
+      }).toLowerCase();
 
-</div>
+      return text.includes(q) || categoryName.includes(q);
 
-</div>
+    });
 
-<div class="items">
 
-${c.items?
-c.items.map((x,ii)=>
-itemRow(ci,ii,x)
-).join(''):
+    const subcategories=(c.subcategories||[])
+      .map((sub,si)=>{
 
-(c.subcategories||[]).map((sub,si)=>`
+        const items=(sub.items||[]).filter(x=>{
 
-<div class="subcat">
+          if(!q)return true;
 
-<b>${esc(sub.name)}</b>
+          const text=JSON.stringify({
+            name:x.name,
+            description:x.description,
+            variants:x.variants,
+            addons:x.addons,
+            category:c.name,
+            subcategory:sub.name
+          }).toLowerCase();
 
-<button class="small-btn"
-onclick="addSubItem(${ci},${si})">
-+ Add Item
-</button>
+          return text.includes(q)
+            || categoryName.includes(q)
+            || String(sub.name||'').toLowerCase().includes(q);
 
-${sub.items.map((x,ii)=>
-itemRow(ci,ii,x,si)
-).join('')}
+        });
 
-</div>
+        return {
+          sub,
+          si,
+          items
+        };
 
-`).join('')}
+      })
+      .filter(x=>x.items.length);
 
-</div>
 
-</div>
-`;
-});
+    const categoryHasResults=
+      normalItems.length>0 ||
+      subcategories.length>0;
 
-$('#menu').innerHTML=html;
+
+    if(q && !categoryHasResults){
+      return;
+    }
+
+
+    found+=normalItems.length;
+
+    subcategories.forEach(x=>{
+      found+=x.items.length;
+    });
+
+
+    html+=`
+      <div class="category-block">
+
+        <div class="cat-head">
+
+          <div>
+
+            <h3>
+              ${c.icon||'🍽️'}
+              ${esc(c.name)}
+            </h3>
+
+            <span class="muted">
+              ${
+                q
+                ? `${normalItems.length + subcategories.reduce((n,s)=>n+s.items.length,0)} matching item(s)`
+                : `${(c.items||[]).length} item(s)`
+              }
+            </span>
+
+          </div>
+
+          <div>
+
+            <button
+              class="small-btn"
+              onclick="addItem(${ci})">
+              + Add Item
+            </button>
+
+            <button
+              class="small-btn danger"
+              onclick="deleteCategory(${ci})">
+              Delete Category
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <div class="items">
+
+          ${
+            normalItems.map(x=>{
+
+              const ii=(c.items||[]).indexOf(x);
+
+              return itemRow(ci,ii,x);
+
+            }).join('')
+          }
+
+
+          ${
+            subcategories.map(({sub,si,items})=>`
+
+              <div class="subcat">
+
+                <b>
+                  ${esc(sub.name)}
+                </b>
+
+                <button
+                  class="small-btn"
+                  onclick="addSubItem(${ci},${si})">
+                  + Add Item
+                </button>
+
+                ${
+                  items.map(x=>{
+
+                    const ii=(sub.items||[]).indexOf(x);
+
+                    return itemRow(ci,ii,x,si);
+
+                  }).join('')
+                }
+
+              </div>
+
+            `).join('')
+          }
+
+        </div>
+
+      </div>
+    `;
+
+  });
+
+
+  if(q && found===0){
+
+    html+=`
+      <div class="helper-card"
+           style="text-align:center;padding:30px">
+
+        <h3>No menu item found</h3>
+
+        <p class="muted">
+          Try another item name, category or variant.
+        </p>
+
+      </div>
+    `;
+
+  }
+
+
+  $('#menu').innerHTML=html;
+
+
+  /* SEARCH INPUT */
+
+  const searchInput=$('#menuSearch');
+
+  if(searchInput){
+
+    searchInput.oninput=e=>{
+
+      menuSearch=e.target.value;
+
+      renderMenu();
+
+    };
+
+  }
+
 }
 
+
 function setMenuView(v){
-menuView=v;
-renderMenu();
+
+  menuView=v;
+
+  if(v!=='items'){
+    menuSearch='';
+  }
+
+  renderMenu();
+
 }
 
 function renderCategories(){
