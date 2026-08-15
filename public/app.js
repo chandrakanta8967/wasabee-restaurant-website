@@ -77,7 +77,36 @@ function renderMenu(){let html='';function itemCard(item){
 
     </article>
   `;
-}function openItem(item){
+}
+  function searchMenu(){
+  const input = document.getElementById('menuSearch');
+  const query = input.value.trim().toLowerCase();
+
+  const cards = document.querySelectorAll('.food-card');
+
+  cards.forEach(card => {
+    const text = card.innerText.toLowerCase();
+
+    if(!query || text.includes(query)){
+      card.style.display = '';
+    }else{
+      card.style.display = 'none';
+    }
+  });
+}
+
+function clearMenuSearch(){
+  const input = document.getElementById('menuSearch');
+
+  input.value = '';
+
+  document.querySelectorAll('.food-card').forEach(card => {
+    card.style.display = '';
+  });
+}
+
+document.getElementById('menuSearch')?.addEventListener('input', searchMenu);
+function openItem(item){
  const groups=(item.addonGroups||[]).map(id=>(DATA.settings.addonGroups||[]).find(g=>g.id===id)).filter(g=>g&&g.active!==false);
  let addonHtml='';
  if(groups.length){addonHtml=`<div class="addon-section"><div class="addon-section-title"><span>➕ Customize Your Order</span><small>Choose options if you want</small></div>${groups.map(g=>`<div class="addon-group"><div class="addon-group-title"><div><h3>${g.name}</h3><small>${g.description||''}</small></div><span class="addon-rule">${g.required?'Required':'Optional'} · ${g.selection==='multiple'?'Choose multiple':'Choose one'}</span></div><div class="addon-choice-list">${(g.options||[]).filter(o=>o.active!==false).map(o=>`<button type="button" class="addon-choice" data-group="${g.id}" data-mode="${g.selection==='multiple'?'multiple':'single'}" data-price="${Number(o.price||0)}" data-name="${String(o.name).replace(/"/g,'&quot;')}" onclick="selectAddonChoice(this)"><span>${g.selection==='multiple'?'☐':'○'}</span><b>${o.name}</b><em>${Number(o.price||0)?'+'+money(o.price):'Included'}</em></button>`).join('')||'<div class="empty">No active options in this group.</div>'}</div></div>`).join('')}</div>`}
