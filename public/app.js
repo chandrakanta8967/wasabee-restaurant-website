@@ -78,23 +78,57 @@ function renderMenu(){let html='';function itemCard(item){
     </article>
   `;
 }
-  function searchMenu(){
+  function openMenuSearch(){
+  const modal = document.getElementById('menuSearchModal');
+  const input = document.getElementById('menuSearch');
+
+  modal.classList.add('show');
+
+  setTimeout(() => {
+    input.focus();
+  }, 100);
+}
+
+function closeMenuSearch(){
+  const modal = document.getElementById('menuSearchModal');
+  const input = document.getElementById('menuSearch');
+
+  modal.classList.remove('show');
+  input.value = '';
+    document.querySelectorAll('.food-card').forEach(card => {
+    card.style.display = '';
+  });
+}
+
+function searchMenu(){
   const input = document.getElementById('menuSearch');
   const query = input.value.trim().toLowerCase();
 
+  const result = document.getElementById('menuSearchResults');
   const cards = document.querySelectorAll('.food-card');
+
+  if(!query){
+    result.innerHTML = '';
+    return;
+  }
+
+  let found = 0;
 
   cards.forEach(card => {
     const text = card.innerText.toLowerCase();
 
-    if(!query || text.includes(query)){
+    if(text.includes(query)){
       card.style.display = '';
+      found++;
     }else{
       card.style.display = 'none';
     }
   });
-}
 
+  result.innerHTML = found
+    ? `<p class="search-found">${found} menu item found</p>`
+    : `<p class="search-not-found">No menu item found.</p>`;
+}
 function clearMenuSearch(){
   const input = document.getElementById('menuSearch');
 
