@@ -1,172 +1,82 @@
-/* =========================================================
-   WASABEE ORIENTAL CUISINE
-   PUBLIC WEBSITE APP.JS
-   Clean replacement version
-   ========================================================= */
-
-let DATA = {
-  menu: [],
-  settings: {},
-  reviews: [],
-  coupons: []
+let DATA={
+  menu:[],
+  settings:{},
+  reviews:[],
+  coupons:[]
 };
 
-let cart = [];
-let heroIndex = 0;
-let heroTimer = null;
-let couponDiscount = 0;
-let appliedCoupon = '';
-let customerLocation = '';
-let reviewRating = 5;
+let cart=[];
+let heroIndex=0;
+let heroTimer=null;
+let couponDiscount=0;
+let appliedCoupon='';
+let customerLocation='';
 
-const $ = (selector) => document.querySelector(selector);
-const $$ = (selector) => document.querySelectorAll(selector);
+const $=s=>document.querySelector(s);
+const $$=s=>document.querySelectorAll(s);
 
-
-/* =========================================================
-   BASIC HELPERS
-   ========================================================= */
-
-function money(value) {
-  const currency = DATA?.settings?.currency || '₹';
-  const number = Number(value || 0);
-
-  return currency + number.toLocaleString('en-IN');
+function money(n){
+  return (DATA.settings.currency||'₹')+
+    Number(n||0).toLocaleString('en-IN');
 }
 
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-
-function escapeAttribute(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-
-function toast(message) {
-  const t = $('#toast');
-
-  if (!t) {
-    console.log(message);
-    return;
-  }
-
-  t.className = 'toast show';
-  t.textContent = message;
-
-  clearTimeout(t._timer);
-
-  t._timer = setTimeout(() => {
-    t.className = 'toast';
-  }, 2400);
-}
-
-
-/* =========================================================
+/* =========================
    INITIAL LOAD
-   ========================================================= */
+========================= */
 
-async function init() {
-  try {
-    const response = await fetch('/api/public-data', {
-      cache: 'no-store'
-    });
+async function init(){
+  try{
+    const r=await fetch('/api/public-data');
 
-    if (!response.ok) {
-      throw new Error(
-        `Public data request failed: ${response.status}`
-      );
+    if(!r.ok){
+      throw new Error('Could not load public data');
     }
 
-    const data = await response.json();
-
-    DATA = {
-      menu: Array.isArray(data.menu) ? data.menu : [],
-      settings: data.settings || {},
-      reviews: Array.isArray(data.reviews) ? data.reviews : [],
-      coupons: Array.isArray(data.coupons) ? data.coupons : []
-    };
+    DATA=await r.json();
 
     renderHero();
     renderCats();
     renderMenu();
     renderReviews();
     renderCart();
-
     startHero();
 
-  } catch (error) {
-    console.error('WASABEE INIT ERROR:', error);
-
-    toast(
-      'Website data could not be loaded. Please refresh the page.'
-    );
+  }catch(err){
+    console.error('WASABEE INIT ERROR:',err);
+    toast('Website data could not be loaded.');
   }
 }
 
 
-/* =========================================================
+/* =========================
    HERO BANNER
-   ========================================================= */
+========================= */
 
-function renderHero() {
-  const container = $('#heroSlides');
-  const dots = $('#heroDots');
+function renderHero(){
 
-  if (!container) {
-    return;
-  }
+  const box=$('#heroSlides');
+  const dots=$('#heroDots');
 
-  const banners = Array.isArray(DATA?.settings?.heroBanners)
-    ? DATA.settings.heroBanners
-    : [];
+  if(!box)return;
 
-  heroIndex = 0;
+  const banners=
+    Array.isArray(DATA.settings.heroBanners)
+      ? DATA.settings.heroBanners
+      : [];
 
-  if (!banners.length) {
-    container.innerHTML = '';
-    
-    if (dots) {
-      dots.innerHTML = '';
-    }
+  box.innerHTML=banners.map((x,i)=>{
 
-    return;
-  }
-
-  container.innerHTML = banners.map((banner, index) => {
-
-    const rawTitle =
-      String(banner?.title || 'Oriental Excellence');
-
-    const title = rawTitle.replace(
+    const title=String(
+      x.title||'Oriental Excellence'
+    ).replace(
       'Oriental Excellence',
       'Oriental <em>Excellence</em>'
     );
 
-    const image =
-      banner?.image
-        ? escapeAttribute(banner.image)
-        : '';
-
-    const subtitle =
-      escapeHtml(banner?.subtitle || '');
-
     return `
       <div
-        class="hero-slide ${index === 0 ? 'active' : ''}"
-        style="background-image:url('${image}')"
+        class="hero-slide ${i===0?'active':''}"
+        style="background-image:url('${x.image||''}')"
       >
 
         <div class="hero-content">
@@ -183,9 +93,7 @@ function renderHero() {
 
           <h1>${title}</h1>
 
-          <p>
-            ${subtitle}
-          </p>
+          <p>${x.subtitle||''}</p>
 
           <div class="hero-actions">
 
@@ -212,259 +120,234 @@ function renderHero() {
 
   }).join('');
 
-  if (dots) {
-    dots.innerHTML = banners.map((_, index) => `
-      <span
-        class="dot ${index === 0 ? 'active' : ''}"
-      ></span>
+  if(dots){
+
+    dots.innerHTML=banners.map((_,i)=>`
+      <span class="dot ${i===0?'active':''}"></span>
     `).join('');
+
   }
+
+  heroIndex=0;
 }
 
 
-function startHero() {
-  if (heroTimer) {
+function startHero(){
+
+  if(heroTimer){
     clearInterval(heroTimer);
-    heroTimer = null;
   }
 
-  const slides = $$('.hero-slide');
+  const slides=$$('.hero-slide');
 
-  if (slides.length <= 1) {
-    return;
-  }
+  if(slides.length<=1)return;
 
-  heroTimer = setInterval(() => {
-    heroNext();
-  }, 5000);
+  heroTimer=setInterval(heroNext,5000);
 }
 
 
-function heroNext() {
-  const slides = $$('.hero-slide');
+function heroNext(){
 
-  if (!slides.length) {
-    return;
-  }
+  const slides=$$('.hero-slide');
 
-  heroIndex =
-    (heroIndex + 1) % slides.length;
+  if(!slides.length)return;
+
+  heroIndex=
+    (heroIndex+1)%slides.length;
 
   heroPaint();
 }
 
 
-function heroPrev() {
-  const slides = $$('.hero-slide');
+function heroPrev(){
 
-  if (!slides.length) {
-    return;
-  }
+  const slides=$$('.hero-slide');
 
-  heroIndex =
-    (heroIndex - 1 + slides.length) % slides.length;
+  if(!slides.length)return;
+
+  heroIndex=
+    (heroIndex-1+slides.length)%slides.length;
 
   heroPaint();
 }
 
 
-function heroPaint() {
-  $$('.hero-slide').forEach((slide, index) => {
-    slide.classList.toggle(
+function heroPaint(){
+
+  $$('.hero-slide').forEach((x,i)=>{
+    x.classList.toggle(
       'active',
-      index === heroIndex
+      i===heroIndex
     );
   });
 
-  $$('.dot').forEach((dot, index) => {
-    dot.classList.toggle(
+  $$('.dot').forEach((x,i)=>{
+    x.classList.toggle(
       'active',
-      index === heroIndex
+      i===heroIndex
     );
   });
+
 }
 
 
-/* =========================================================
-   CATEGORY BUTTONS
-   ========================================================= */
+/* =========================
+   CATEGORIES
+========================= */
 
-function renderCats() {
-  const container = $('#categories');
+function renderCats(){
 
-  if (!container) {
-    return;
-  }
+  const box=$('#categories');
 
-  const categories =
+  if(!box)return;
+
+  const cats=
     Array.isArray(DATA.menu)
       ? DATA.menu
       : [];
 
-  container.innerHTML = categories.map((cat, index) => {
+  box.innerHTML=cats.map((x,i)=>`
 
-    const id = escapeAttribute(cat?.id || '');
-    const name = escapeHtml(cat?.name || '');
-    const icon = cat?.icon || '🍽️';
+    <button
+      class="cat ${i===0?'active':''}"
+      type="button"
+      onclick="jumpCat('${x.id}')"
+    >
 
-    return `
-      <button
-        type="button"
-        class="cat ${index === 0 ? 'active' : ''}"
-        onclick="jumpCat('${id}')"
-      >
-        <span class="icon">
-          ${icon}
-        </span>
+      <span class="icon">
+        ${x.icon||'🍽️'}
+      </span>
 
-        ${name}
-      </button>
-    `;
+      ${x.name||''}
 
-  }).join('');
+    </button>
+
+  `).join('');
 }
 
 
-/* =========================================================
-   MENU DATA HELPERS
-   ========================================================= */
+/* =========================
+   MENU DATA
+========================= */
 
-function flattenItems(category) {
+function flattenItems(cat){
 
-  if (Array.isArray(category?.items)) {
+  if(Array.isArray(cat.items)){
 
-    return category.items.map(item => ({
-      ...item,
-      sub: ''
+    return cat.items.map(x=>({
+      ...x,
+      sub:''
     }));
 
   }
 
-  return (category?.subcategories || [])
-    .flatMap(sub => {
+  return (cat.subcategories||[]).flatMap(
+    s=>
+      (s.items||[]).map(x=>({
+        ...x,
+        sub:s.name||''
+      }))
+  );
 
-      return (sub?.items || []).map(item => ({
-        ...item,
-        sub: sub?.name || ''
-      }));
-
-    });
 }
 
 
-/* =========================================================
-   MENU IMAGE
-   ========================================================= */
+/* =========================
+   FOOD IMAGE
+========================= */
 
-function imageFor(item) {
+function imageFor(item){
 
-  if (
-    item?.image &&
+  if(
+    item.image &&
     String(item.image).trim()
-  ) {
-    return String(item.image).trim();
+  ){
+    return item.image;
   }
 
-  const name =
+  const q=
     encodeURIComponent(
-      item?.name || 'asian food'
+      item.name||'asian food'
     );
 
-  return `https://source.unsplash.com/600x400/?${name},asian-food`;
+  return `https://source.unsplash.com/600x400/?${q},asian-food`;
 }
 
 
-/* =========================================================
-   MENU CARD
-   ========================================================= */
+/* =========================
+   FOOD CARD
+========================= */
 
-function itemCard(item) {
+function itemCard(item){
 
-  if (
-    !item ||
-    item.active === false
-  ) {
-    return '';
-  }
+  if(item.active===false)return '';
 
-  const variants =
+  const variants=
     Array.isArray(item.variants)
       ? item.variants
       : [];
 
-  const hasVariants =
-    variants.length > 0;
+  const hasVariants=
+    variants.length>0;
 
-  let basePrice =
-    Number(item.price || 0);
+  const base=
+    hasVariants
+      ? Math.min(
+          ...variants.map(
+            v=>Number(v.price||0)
+          )
+        )
+      : Number(item.price||0);
 
-  if (hasVariants) {
+  const label=
+    hasVariants
+      ? `${variants.length} choices`
+      : money(base);
 
-    const prices = variants
-      .map(v => Number(v?.price || 0))
-      .filter(price => !Number.isNaN(price));
+  const name=
+    String(item.name||'');
 
-    if (prices.length) {
-      basePrice = Math.min(...prices);
-    }
-
-  }
-
-  const label = hasVariants
-    ? `${variants.length} choices`
-    : money(basePrice);
-
-  const image =
-    escapeAttribute(imageFor(item));
-
-  const itemJson =
-    JSON.stringify(item)
-      .replace(/\\/g, '\\\\')
-      .replace(/'/g, '&#39;');
-
-  const itemName =
-    escapeHtml(item.name || '');
-
-  const description =
-    escapeHtml(
-      item.description ||
-      'Authentic oriental preparation crafted by WASABEE.'
-    );
-
-  let icon = '';
-
-  const lowerName =
-    String(item.name || '').toLowerCase();
-
-  if (lowerName.includes('soup')) {
-    icon = '🍲';
-  } else if (lowerName.includes('sushi')) {
-    icon = '🍣';
-  }
+  const icon=
+    name.toLowerCase().includes('soup')
+      ? '🍲'
+      : name.toLowerCase().includes('sushi')
+        ? '🍣'
+        : '🍽️';
 
   return `
+
     <article class="food-card">
 
       <div
         class="food-img"
         style="
-          background-image:url('${image}');
+          background-image:
+            linear-gradient(
+              135deg,
+              rgba(128,0,128,.35),
+              rgba(15,0,15,.12)
+            ),
+            url('${imageFor(item)}');
+
           background-size:cover;
           background-position:center;
           background-repeat:no-repeat;
         "
       >
+
         <span>${icon}</span>
+
       </div>
 
       <div class="food-body">
 
-        <h4>
-          ${itemName}
-        </h4>
+        <h4>${item.name||''}</h4>
 
         <p>
-          ${description}
+          ${
+            item.description||
+            'Authentic oriental preparation crafted by WASABEE.'
+          }
         </p>
 
         ${
@@ -483,16 +366,16 @@ function itemCard(item) {
 
             ${
               hasVariants
-                ? `From ${money(basePrice)}`
-                : money(basePrice)
+                ? `From ${money(base)}`
+                : money(base)
             }
 
           </span>
 
           <button
-            type="button"
             class="add"
-            onclick='openItem(${itemJson})'
+            type="button"
+            onclick='openItem(${JSON.stringify(item).replace(/'/g,"&#39;")})'
           >
             Add +
           </button>
@@ -502,250 +385,157 @@ function itemCard(item) {
       </div>
 
     </article>
+
   `;
 }
 
 
-/* =========================================================
-   MAIN MENU
-   IMPORTANT:
-   Keeps the original menu/grid structure.
-   ========================================================= */
+/* =========================
+   RENDER MENU
+========================= */
 
-function renderMenu() {
+function renderMenu(){
 
-  const container = $('#menu');
+  const box=$('#menu');
 
-  if (!container) {
-    return;
-  }
+  if(!box)return;
 
-  let html = '';
+  let html='';
 
-  const categories =
+  const cats=
     Array.isArray(DATA.menu)
       ? DATA.menu
       : [];
 
-  categories.forEach(category => {
+  cats.forEach(cat=>{
 
-    const categoryId =
-      escapeAttribute(category?.id || '');
+    const items=
+      flattenItems(cat)
+      .filter(item=>item.active!==false);
 
-    const categoryName =
-      escapeHtml(category?.name || 'MENU');
+    if(!items.length)return;
 
-    const categoryIcon =
-      category?.icon || '🍽️';
+    html+=`
 
-    html += `
       <section
         class="menu-category"
-        id="cat-${categoryId}"
+        id="cat-${cat.id}"
       >
 
-        <h3>
-          ${categoryIcon}
-          ${categoryName}
-        </h3>
-    `;
+        <div class="section-head menu-category-head">
 
+          <div>
 
-    /* -----------------------------------------
-       CATEGORY WITH SUBCATEGORIES
-       ----------------------------------------- */
+            <span class="eyebrow">
+              ${cat.name||'MENU'}
+            </span>
 
-    if (
-      Array.isArray(category?.subcategories) &&
-      category.subcategories.length
-    ) {
+            <h2>
+              ${cat.name||''}
+            </h2>
 
-      category.subcategories.forEach(subcategory => {
-
-        const subName =
-          escapeHtml(
-            subcategory?.name || ''
-          );
-
-        const items =
-          Array.isArray(subcategory?.items)
-            ? subcategory.items
-            : [];
-
-        const activeItems =
-          items.filter(
-            item => item?.active !== false
-          );
-
-        if (!activeItems.length) {
-          return;
-        }
-
-        html += `
-          <div class="subcat">
-            ${subName}
           </div>
 
-          <div class="grid">
-            ${activeItems
-              .map(item => itemCard(item))
-              .join('')}
-          </div>
-        `;
+        </div>
 
-      });
+        <div class="menu-grid">
 
+          ${items.map(itemCard).join('')}
 
-    } else {
+        </div>
 
-      /* -----------------------------------------
-         NORMAL CATEGORY
-         ----------------------------------------- */
-
-      const items =
-        Array.isArray(category?.items)
-          ? category.items
-          : [];
-
-      const activeItems =
-        items.filter(
-          item => item?.active !== false
-        );
-
-      if (activeItems.length) {
-
-        html += `
-          <div class="grid">
-            ${activeItems
-              .map(item => itemCard(item))
-              .join('')}
-          </div>
-        `;
-
-      }
-
-    }
-
-    html += `
       </section>
+
     `;
 
   });
 
-  container.innerHTML = html;
-
-  /*
-    Important:
-    Search can be used after the menu is rendered.
-  */
-
-  const currentSearch =
-    $('#menuSearch');
-
-  if (
-    currentSearch &&
-    currentSearch.value.trim()
-  ) {
-    searchMenu();
-  }
+  box.innerHTML=html;
 }
 
 
-/* =========================================================
-   MENU SEARCH
-   ========================================================= */
-
-function getSearchResultElement() {
-
-  return (
-    document.getElementById('menuSearchResults') ||
-    document.getElementById('menuSearchResult')
-  );
-
-}
-
+/* =========================
+   HEADER SEARCH
+========================= */
 
 function openMenuSearch(){
-  const input = document.getElementById('menuSearch');
 
-  if(!input){
-    console.error('Menu search input not found');
-    return;
-  }
+  const input=$('#menuSearch');
+  const order=$('#order');
 
-  const orderSection = document.getElementById('order');
+  if(order){
 
-  if(orderSection){
-    orderSection.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
+    order.scrollIntoView({
+      behavior:'smooth',
+      block:'start'
     });
+
   }
 
-  setTimeout(() => {
-    input.focus();
-    input.select();
-  }, 500);
+  if(input){
+
+    setTimeout(()=>{
+
+      input.focus();
+      input.select();
+
+    },450);
+
+  }
+
 }
 
 
 function closeMenuSearch(){
-  const input = document.getElementById('menuSearch');
 
-  if(input){
-    input.value = '';
-  }
+  clearMenuSearch();
 
-  document.querySelectorAll('.food-card').forEach(card => {
-    card.style.display = '';
-  });
-
-  const result =
-    document.getElementById('menuSearchResult') ||
-    document.getElementById('menuSearchResults');
-
-  if(result){
-    result.innerHTML = '';
-  }
 }
 
 
 function searchMenu(){
 
-  const input = document.getElementById('menuSearch');
+  const input=$('#menuSearch');
 
-  if(!input){
-    return;
-  }
+  const result=
+    $('#menuSearchResult')||
+    $('#menuSearchResults');
 
-  const query = input.value
-    .trim()
-    .toLowerCase();
+  if(!input)return;
 
-  const cards = document.querySelectorAll('.food-card');
+  const query=
+    input.value
+      .trim()
+      .toLowerCase();
 
-  const result =
-    document.getElementById('menuSearchResult') ||
-    document.getElementById('menuSearchResults');
+  const cards=$$('.food-card');
 
-  let found = 0;
+  let found=0;
 
-  cards.forEach(card => {
+  cards.forEach(card=>{
 
-    const text = card.innerText.toLowerCase();
+    const text=
+      (card.innerText||'')
+      .toLowerCase();
 
     if(!query){
 
-      card.style.display = '';
-      
-    }else if(text.includes(query)){
+      card.style.display='';
 
-      card.style.display = '';
+    }
+
+    else if(
+      text.includes(query)
+    ){
+
+      card.style.display='';
       found++;
 
-    }else{
+    }
 
-      card.style.display = 'none';
+    else{
+
+      card.style.display='none';
 
     }
 
@@ -756,22 +546,37 @@ function searchMenu(){
 
     if(!query){
 
-      result.innerHTML = '';
+      result.innerHTML='';
 
-    }else if(found === 1){
+    }
 
-      result.innerHTML =
-        `<p class="search-found">${found} menu item found</p>`;
+    else if(found){
 
-    }else if(found > 1){
+      result.innerHTML=`
 
-      result.innerHTML =
-        `<p class="search-found">${found} menu items found</p>`;
+        <p class="search-found">
 
-    }else{
+          ${found}
+          menu item${found===1?'':'s'}
+          found
 
-      result.innerHTML =
-        `<p class="search-not-found">No menu item found.</p>`;
+        </p>
+
+      `;
+
+    }
+
+    else{
+
+      result.innerHTML=`
+
+        <p class="search-not-found">
+
+          No menu item found.
+
+        </p>
+
+      `;
 
     }
 
@@ -782,396 +587,54 @@ function searchMenu(){
 
 function clearMenuSearch(){
 
-  const input = document.getElementById('menuSearch');
+  const input=$('#menuSearch');
 
   if(input){
-    input.value = '';
-    input.focus();
+    input.value='';
   }
 
-  document.querySelectorAll('.food-card').forEach(card => {
-    card.style.display = '';
-  });
+  $$('.food-card').forEach(
+    card=>{
+      card.style.display='';
+    }
+  );
 
-  const result =
-    document.getElementById('menuSearchResult') ||
-    document.getElementById('menuSearchResults');
+  const result=
+    $('#menuSearchResult')||
+    $('#menuSearchResults');
 
   if(result){
-    result.innerHTML = '';
+    result.innerHTML='';
   }
 
 }
 
 
-document.addEventListener('DOMContentLoaded', function(){
-
-  const input = document.getElementById('menuSearch');
-
-  if(input){
-
-    input.addEventListener('input', searchMenu);
-
-    input.addEventListener('keydown', function(e){
-
-      if(e.key === 'Escape'){
-        clearMenuSearch();
-      }
-
-    });
-
-  }
-
-});
-
-  /*
-    If you already have a search modal in HTML,
-    use it.
-  */
-
-  if (modal && input) {
-
-    modal.classList.add('show');
-
-    setTimeout(() => {
-      input.focus();
-    }, 100);
-
-    return;
-  }
-
-
-  /*
-    If there is no modal and search input already
-    exists in the page, focus it.
-  */
-
-  if (input) {
-
-    input.focus();
-
-    try {
-      input.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center'
-      });
-    } catch (error) {
-      console.log(error);
-    }
-
-    return;
-  }
-
-
-  /*
-    Last fallback:
-    create a small search overlay dynamically.
-  */
-
-  createSearchModal();
-
-}
-
-
-function createSearchModal() {
-
-  if (
-    document.getElementById('menuSearchModal')
-  ) {
-    openMenuSearch();
-    return;
-  }
-
-  const modal =
-    document.createElement('div');
-
-  modal.id =
-    'menuSearchModal';
-
-  modal.className =
-    'modal';
-
-  modal.innerHTML = `
-    <div class="modal-card">
-
-      <button
-        type="button"
-        class="modal-close"
-        onclick="closeMenuSearch()"
-      >
-        ×
-      </button>
-
-      <span class="eyebrow">
-        WASABEE MENU
-      </span>
-
-      <h2>
-        Search Menu
-      </h2>
-
-      <div
-        class="menu-search-box"
-        style="margin-top:20px"
-      >
-
-        <input
-          type="search"
-          id="menuSearch"
-          placeholder="🔍 Search menu item..."
-          autocomplete="off"
-        >
-
-        <button
-          type="button"
-          onclick="clearMenuSearch()"
-        >
-          Clear
-        </button>
-
-      </div>
-
-      <div
-        id="menuSearchResults"
-        style="margin-top:10px"
-      ></div>
-
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  const input =
-    modal.querySelector('#menuSearch');
-
-  if (input) {
-
-    input.addEventListener(
-      'input',
-      searchMenu
-    );
-
-    input.addEventListener(
-      'keydown',
-      event => {
-
-        if (event.key === 'Escape') {
-          closeMenuSearch();
-        }
-
-      }
-    );
-
-    setTimeout(() => {
-      input.focus();
-    }, 100);
-
-  }
-
-  modal.classList.add('show');
-}
-
-
-function closeMenuSearch() {
-
-  const modal =
-    document.getElementById('menuSearchModal');
-
-  const input =
-    document.getElementById('menuSearch');
-
-  if (modal) {
-    modal.classList.remove('show');
-  }
-
-  if (input) {
-    input.value = '';
-  }
-
-  clearMenuSearch();
-
-}
-
-
-function searchMenu() {
-
-  const input =
-    document.getElementById('menuSearch');
-
-  if (!input) {
-    return;
-  }
-
-  const query =
-    input.value
-      .trim()
-      .toLowerCase();
-
-  const cards =
-    document.querySelectorAll('.food-card');
-
-  const result =
-    getSearchResultElement();
-
-  let found = 0;
-
-
-  cards.forEach(card => {
-
-    const text =
-      card.innerText
-        .toLowerCase();
-
-    if (!query) {
-
-      card.style.display = '';
-      return;
-
-    }
-
-    if (text.includes(query)) {
-
-      card.style.display = '';
-      found++;
-
-    } else {
-
-      card.style.display = 'none';
-
-    }
-
-  });
-
-
-  /*
-    Hide empty category sections when searching.
-    This does NOT change their normal layout.
-  */
-
-  const sections =
-    document.querySelectorAll(
-      '.menu-category'
-    );
-
-  sections.forEach(section => {
-
-    if (!query) {
-
-      section.style.display = '';
-
-      return;
-    }
-
-    const visibleCards =
-      section.querySelectorAll(
-        '.food-card:not([style*="display: none"])'
-      );
-
-    section.style.display =
-      visibleCards.length
-        ? ''
-        : 'none';
-
-  });
-
-
-  if (result) {
-
-    if (!query) {
-
-      result.innerHTML = '';
-
-    } else if (found) {
-
-      result.innerHTML = `
-        <p class="search-found">
-          ${found}
-          menu item${found > 1 ? 's' : ''}
-          found
-        </p>
-      `;
-
-    } else {
-
-      result.innerHTML = `
-        <p class="search-not-found">
-          No menu item found.
-        </p>
-      `;
-
-    }
-
-  }
-
-}
-
-
-function clearMenuSearch() {
-
-  const input =
-    document.getElementById('menuSearch');
-
-  if (input) {
-    input.value = '';
-  }
-
-  document
-    .querySelectorAll('.food-card')
-    .forEach(card => {
-      card.style.display = '';
-    });
-
-
-  document
-    .querySelectorAll('.menu-category')
-    .forEach(section => {
-      section.style.display = '';
-    });
-
-
-  const result =
-    getSearchResultElement();
-
-  if (result) {
-    result.innerHTML = '';
-  }
-
-}
-
-
-/* =========================================================
+/* =========================
    ITEM MODAL
-   ========================================================= */
+========================= */
 
-function openItem(item) {
+function openItem(item){
 
-  const modalBody =
-    $('#itemModalBody');
-
-  if (!modalBody) {
-    return;
-  }
-
-
-  const groups =
-    (item?.addonGroups || [])
-      .map(id =>
-        (DATA.settings.addonGroups || [])
-          .find(group => group.id === id)
+  const groups=
+    (item.addonGroups||[])
+      .map(
+        id=>
+          (DATA.settings.addonGroups||[])
+            .find(g=>g.id===id)
       )
       .filter(
-        group =>
-          group &&
-          group.active !== false
+        g=>g&&g.active!==false
       );
 
 
-  let addonHtml = '';
+  let addonHtml='';
 
 
-  if (groups.length) {
+  if(groups.length){
 
-    addonHtml = `
+    addonHtml=`
+
       <div class="addon-section">
 
         <div class="addon-section-title">
@@ -1186,127 +649,114 @@ function openItem(item) {
 
         </div>
 
-        ${groups.map(group => {
+        ${groups.map(g=>`
 
-          const options =
-            (group.options || [])
-              .filter(
-                option =>
-                  option.active !== false
-              );
+          <div class="addon-group">
 
+            <div class="addon-group-title">
 
-          return `
-            <div class="addon-group">
+              <div>
 
-              <div class="addon-group-title">
+                <h3>${g.name}</h3>
 
-                <div>
-
-                  <h3>
-                    ${escapeHtml(group.name || '')}
-                  </h3>
-
-                  <small>
-                    ${escapeHtml(group.description || '')}
-                  </small>
-
-                </div>
-
-                <span class="addon-rule">
-
-                  ${
-                    group.required
-                      ? 'Required'
-                      : 'Optional'
-                  }
-
-                  ·
-
-                  ${
-                    group.selection === 'multiple'
-                      ? 'Choose multiple'
-                      : 'Choose one'
-                  }
-
-                </span>
+                <small>
+                  ${g.description||''}
+                </small>
 
               </div>
 
-
-              <div class="addon-choice-list">
+              <span class="addon-rule">
 
                 ${
-                  options.length
-                    ? options.map(option => {
-
-                        const mode =
-                          group.selection === 'multiple'
-                            ? 'multiple'
-                            : 'single';
-
-                        const price =
-                          Number(option.price || 0);
-
-                        return `
-                          <button
-                            type="button"
-                            class="addon-choice"
-                            data-group="${escapeAttribute(group.id)}"
-                            data-mode="${mode}"
-                            data-price="${price}"
-                            data-name="${escapeAttribute(option.name || '')}"
-                            onclick="selectAddonChoice(this)"
-                          >
-
-                            <span>
-                              ${
-                                mode === 'multiple'
-                                  ? '☐'
-                                  : '○'
-                              }
-                            </span>
-
-                            <b>
-                              ${escapeHtml(option.name || '')}
-                            </b>
-
-                            <em>
-                              ${
-                                price
-                                  ? '+' + money(price)
-                                  : 'Included'
-                              }
-                            </em>
-
-                          </button>
-                        `;
-
-                      }).join('')
-                    : `
-                      <div class="empty">
-                        No active options in this group.
-                      </div>
-                    `
+                  g.required
+                    ? 'Required'
+                    : 'Optional'
                 }
 
-              </div>
+                ·
+
+                ${
+                  g.selection==='multiple'
+                    ? 'Choose multiple'
+                    : 'Choose one'
+                }
+
+              </span>
 
             </div>
-          `;
 
-        }).join('')}
+
+            <div class="addon-choice-list">
+
+              ${
+                (g.options||[])
+                  .filter(
+                    o=>o.active!==false
+                  )
+                  .map(o=>`
+
+                    <button
+                      type="button"
+                      class="addon-choice"
+                      data-group="${g.id}"
+                      data-mode="${
+                        g.selection==='multiple'
+                          ? 'multiple'
+                          : 'single'
+                      }"
+                      data-price="${Number(o.price||0)}"
+                      data-name="${
+                        String(o.name)
+                          .replace(/"/g,'&quot;')
+                      }"
+                      onclick="selectAddonChoice(this)"
+                    >
+
+                      <span>
+                        ${
+                          g.selection==='multiple'
+                            ? '☐'
+                            : '○'
+                        }
+                      </span>
+
+                      <b>${o.name}</b>
+
+                      <em>
+
+                        ${
+                          Number(o.price||0)
+                            ? '+'+money(o.price)
+                            : 'Included'
+                        }
+
+                      </em>
+
+                    </button>
+
+                  `)
+                  .join('')
+                  ||
+                  '<div class="empty">No active options in this group.</div>'
+              }
+
+            </div>
+
+          </div>
+
+        `).join('')}
 
       </div>
+
     `;
 
   }
 
 
-  const legacy =
-    Array.isArray(item?.addons) &&
-    item.addons.length
+  const legacy=
+    item.addons?.length
       ? `
+
         <div class="addon-section">
 
           <div class="addon-section-title">
@@ -1323,117 +773,128 @@ function openItem(item) {
 
           <div class="addon-list">
 
-            ${item.addons.map(addon => `
-              <button
-                type="button"
-                class="addon"
-                data-name="${escapeAttribute(addon)}"
-                data-price="0"
-                onclick="this.classList.toggle('selected')"
-              >
-                ${escapeHtml(addon)}
-              </button>
-            `).join('')}
+            ${
+              item.addons.map(a=>`
+
+                <button
+                  type="button"
+                  class="addon"
+                  data-name="${
+                    String(a)
+                      .replace(/"/g,'&quot;')
+                  }"
+                  data-price="0"
+                  onclick="this.classList.toggle('selected')"
+                >
+
+                  ${a}
+
+                </button>
+
+              `).join('')
+            }
 
           </div>
 
         </div>
+
       `
       : '';
 
 
-  const variants =
-    Array.isArray(item?.variants)
-      ? item.variants
-      : [];
+  const variants=
+    item.variants?.length
 
-
-  const variantsHtml =
-    variants.length
       ? `
+
         <div class="variant-list">
 
-          ${variants.map((variant, index) => `
+          ${
+            item.variants.map((v,i)=>`
 
-            <button
-              type="button"
-              class="variant ${
-                index === 0
-                  ? 'selected'
-                  : ''
-              }"
-              data-price="${Number(variant.price || 0)}"
-              onclick="selectVariant(this)"
-            >
+              <button
+                type="button"
+                class="variant ${
+                  i===0?'selected':''
+                }"
+                data-price="${v.price}"
+                onclick="selectVariant(this)"
+              >
 
-              <span>
-                ${escapeHtml(variant.name || '')}
-              </span>
+                <span>${v.name}</span>
 
-              <b>
-                ${money(variant.price)}
-              </b>
+                <b>${money(v.price)}</b>
 
-            </button>
+              </button>
 
-          `).join('')}
+            `).join('')
+          }
 
         </div>
+
       `
+
       : `
+
         <input
           type="hidden"
           id="singlePrice"
-          value="${Number(item.price || 0)}"
+          value="${item.price||0}"
         >
+
       `;
 
 
-  const itemJson =
-    JSON.stringify(item)
-      .replace(/\\/g, '\\\\')
-      .replace(/'/g, '&#39;');
+  const body=$('#itemModalBody');
+
+  if(!body)return;
 
 
-  modalBody.innerHTML = `
+  body.innerHTML=`
 
     <span class="eyebrow">
+
       ${
-        variants.length
+        item.variants?.length
           ? 'CHOOSE VARIANT'
           : 'ADD TO CART'
       }
+
     </span>
 
     <h2>
-      ${escapeHtml(item.name || '')}
+      ${item.name}
     </h2>
 
     <p>
-      ${escapeHtml(
-        item.description ||
+      ${
+        item.description||
         'Authentic oriental preparation crafted by WASABEE.'
-      )}
+      }
     </p>
 
-    ${variantsHtml}
+    ${variants}
 
     ${addonHtml}
 
     ${legacy}
 
     <div class="modal-price-note">
+
       Container charge is added at checkout.
+
     </div>
 
     <div style="margin-top:22px">
 
       <button
-        type="button"
         class="btn purple full"
-        onclick='confirmAdd(${itemJson})'
+        type="button"
+        onclick='confirmAdd(${JSON.stringify(item).replace(/'/g,"&#39;")})'
       >
+
         Add to Cart
+
       </button>
 
     </div>
@@ -1442,69 +903,60 @@ function openItem(item) {
 
 
   $('#itemModal')?.classList.add('show');
+
 }
 
 
-function selectVariant(element) {
+function selectVariant(el){
 
   $$('#itemModal .variant')
-    .forEach(item => {
-      item.classList.remove('selected');
-    });
+    .forEach(
+      x=>x.classList.remove('selected')
+    );
 
-  element.classList.add('selected');
+  el.classList.add('selected');
+
 }
 
 
-function selectAddonChoice(element) {
+function selectAddonChoice(el){
 
-  const mode =
-    element.dataset.mode;
+  const mode=el.dataset.mode;
 
 
-  if (mode === 'single') {
-
-    const group =
-      element.dataset.group;
-
+  if(mode==='single'){
 
     $$(
-      `#itemModal .addon-choice[data-group="${CSS.escape(group)}"]`
-    ).forEach(choice => {
+      `#itemModal .addon-choice[data-group="${CSS.escape(el.dataset.group)}"]`
+    ).forEach(x=>{
 
-      choice.classList.remove('selected');
+      x.classList.remove('selected');
 
-      const span =
-        choice.querySelector('span');
+      const s=x.querySelector('span');
 
-      if (span) {
-        span.textContent = '○';
-      }
+      if(s)s.textContent='○';
 
     });
 
 
-    element.classList.add('selected');
+    el.classList.add('selected');
 
-    const span =
-      element.querySelector('span');
+    const s=el.querySelector('span');
 
-    if (span) {
-      span.textContent = '●';
-    }
+    if(s)s.textContent='●';
 
+  }
 
-  } else {
+  else{
 
-    element.classList.toggle('selected');
+    el.classList.toggle('selected');
 
-    const span =
-      element.querySelector('span');
+    const s=el.querySelector('span');
 
-    if (span) {
+    if(s){
 
-      span.textContent =
-        element.classList.contains('selected')
+      s.textContent=
+        el.classList.contains('selected')
           ? '☑'
           : '☐';
 
@@ -1515,7 +967,7 @@ function selectAddonChoice(element) {
 }
 
 
-function closeItem() {
+function closeItem(){
 
   $('#itemModal')
     ?.classList.remove('show');
@@ -1523,116 +975,111 @@ function closeItem() {
 }
 
 
-/* =========================================================
+/* =========================
    ADD TO CART
-   ========================================================= */
+========================= */
 
-function confirmAdd(item) {
+function confirmAdd(item){
 
-  let variant = '';
-  let price = Number(item.price || 0);
+  let variant='';
 
-
-  const variants =
-    Array.isArray(item.variants)
-      ? item.variants
-      : [];
+  let price=
+    Number(item.price||0);
 
 
-  if (variants.length) {
+  if(item.variants?.length){
 
-    const selected =
+    const v=
       $('#itemModal .variant.selected');
 
+    variant=
+      v?.querySelector('span')?.textContent
+      ||
+      item.variants[0].name;
 
-    variant =
-      selected
-        ?.querySelector('span')
-        ?.textContent
-        ?.trim() ||
-      variants[0].name;
-
-
-    price =
+    price=
       Number(
-        selected?.dataset.price ||
-        variants[0].price ||
-        0
+        v?.dataset.price
+        ||
+        item.variants[0].price
       );
 
   }
 
 
-  const groups =
-    (item.addonGroups || [])
-      .map(id =>
-        (DATA.settings.addonGroups || [])
-          .find(group => group.id === id)
+  const groups=
+    (item.addonGroups||[])
+      .map(
+        id=>
+          (DATA.settings.addonGroups||[])
+            .find(g=>g.id===id)
       )
       .filter(
-        group =>
-          group &&
-          group.active !== false
+        g=>g&&g.active!==false
       );
 
 
-  for (const group of groups) {
+  for(const g of groups){
 
-    if (
-      group.required &&
+    if(
+      g.required &&
       !$$(
-        `#itemModal .addon-choice[data-group="${CSS.escape(group.id)}"].selected`
+        `#itemModal .addon-choice[data-group="${CSS.escape(g.id)}"].selected`
       ).length
-    ) {
+    ){
 
       toast(
-        `Please choose ${group.name}`
+        `Please choose ${g.name}`
       );
 
       return;
+
     }
 
   }
 
 
-  const addons =
-    [
-      ...$$(
-        '#itemModal .addon-choice.selected'
+  const addons=[
+    ...$$(
+      '#itemModal .addon-choice.selected'
+    )
+  ].map(x=>({
+
+    name:x.dataset.name,
+
+    price:
+      Number(
+        x.dataset.price||0
       )
-    ].map(element => ({
-      name: element.dataset.name,
-      price: Number(
-        element.dataset.price || 0
-      )
-    }));
+
+  }));
 
 
-  const legacy =
-    [
-      ...$$(
-        '#itemModal .addon.selected'
-      )
-    ].map(element => ({
-      name:
-        element.dataset.name ||
-        element.textContent.trim(),
+  const legacy=[
+    ...$$(
+      '#itemModal .addon.selected'
+    )
+  ].map(x=>({
 
-      price:
-        Number(
-          element.dataset.price || 0
-        )
-    }));
+    name:
+      x.dataset.name||
+      x.textContent.trim(),
+
+    price:
+      Number(
+        x.dataset.price||0
+      )
+
+  }));
 
 
   addons.push(...legacy);
 
 
-  const addonTotal =
+  const addonTotal=
     addons.reduce(
-      (sum, addon) =>
-        sum +
-        Number(addon.price || 0),
+      (s,a)=>
+        s+Number(a.price||0),
       0
     );
 
@@ -1640,25 +1087,22 @@ function confirmAdd(item) {
   cart.push({
 
     key:
-      Date.now() +
-      Math.random(),
+      Date.now()+Math.random(),
 
-    id: item.id,
+    id:item.id,
 
-    name: item.name,
+    name:item.name,
 
     variant,
 
     addons,
 
     price:
-      price +
-      addonTotal,
+      price+addonTotal,
 
-    basePrice:
-      price,
+    basePrice:price,
 
-    qty: 1,
+    qty:1,
 
     containerCharge:
       Number(
@@ -1674,186 +1118,163 @@ function confirmAdd(item) {
 
   renderCart();
 
-  toast(
-    'Added to cart ✓'
-  );
+  toast('Added to cart ✓');
 
 }
 
 
-/* =========================================================
+/* =========================
    CART
-   ========================================================= */
+========================= */
 
-function renderCart() {
+function renderCart(){
 
-  const count =
+  const count=
     cart.reduce(
-      (sum, item) =>
-        sum + Number(item.qty || 0),
+      (s,x)=>s+x.qty,
       0
     );
 
 
-  if ($('#cartCount')) {
-    $('#cartCount').textContent =
-      count;
-  }
+  if($('#cartCount'))
+    $('#cartCount').textContent=count;
+
+  if($('#drawerCount'))
+    $('#drawerCount').textContent=count;
 
 
-  if ($('#drawerCount')) {
-    $('#drawerCount').textContent =
-      count;
-  }
+  if($('#cartItems')){
 
-
-  if ($('#cartItems')) {
-
-    $('#cartItems').innerHTML =
+    $('#cartItems').innerHTML=
       cart.length
 
-        ? cart.map((item, index) => {
+        ? cart.map((x,i)=>`
 
-            const addons =
-              item.addons?.length
-                ? item.addons
-                    .map(addon =>
-                      typeof addon === 'string'
-                        ? addon
-                        : addon.name
-                    )
-                    .join(', ')
-                : '';
+          <div class="cart-row">
 
+            <div class="cart-thumb">
+              🍜
+            </div>
 
-            return `
-              <div class="cart-row">
+            <div class="cart-info">
 
-                <div class="cart-thumb">
-                  🍜
-                </div>
+              <h4>
+                ${x.name}
+              </h4>
 
-                <div class="cart-info">
+              <small>
 
-                  <h4>
-                    ${escapeHtml(item.name || '')}
-                  </h4>
+                ${x.variant||''}
 
-                  <small>
+                ${
+                  x.addons?.length
+                    ? ' · '+
+                      x.addons
+                        .map(
+                          a=>
+                            typeof a==='string'
+                              ? a
+                              : a.name
+                        )
+                        .join(', ')
+                    : ''
+                }
 
-                    ${escapeHtml(item.variant || '')}
+              </small>
 
-                    ${
-                      addons
-                        ? ' · ' +
-                          escapeHtml(addons)
-                        : ''
-                    }
+              <div class="qty">
 
-                  </small>
+                <button
+                  onclick="changeQty(${i},-1)"
+                >
+                  −
+                </button>
 
-                  <div class="qty">
+                <b>
+                  ${x.qty}
+                </b>
 
-                    <button
-                      type="button"
-                      onclick="changeQty(${index}, -1)"
-                    >
-                      −
-                    </button>
-
-                    <b>
-                      ${item.qty}
-                    </b>
-
-                    <button
-                      type="button"
-                      onclick="changeQty(${index}, 1)"
-                    >
-                      +
-                    </button>
-
-                  </div>
-
-                </div>
-
-                <div>
-
-                  <b>
-                    ${money(
-                      item.price *
-                      item.qty
-                    )}
-                  </b>
-
-                  <button
-                    type="button"
-                    class="remove"
-                    onclick="removeItem(${index})"
-                  >
-                    🗑
-                  </button>
-
-                </div>
+                <button
+                  onclick="changeQty(${i},1)"
+                >
+                  +
+                </button>
 
               </div>
-            `;
 
-          }).join('')
+            </div>
+
+            <div>
+
+              <b>
+                ${money(x.price*x.qty)}
+              </b>
+
+              <button
+                class="remove"
+                onclick="removeItem(${i})"
+              >
+                🗑
+              </button>
+
+            </div>
+
+          </div>
+
+        `).join('')
 
         : `
+
           <div class="empty">
+
             Your cart is empty.
+
             <br>
+
             Add something delicious!
+
           </div>
+
         `;
 
   }
 
 
-  const subtotal =
+  const sub=
     cart.reduce(
-      (sum, item) =>
-        sum +
-        Number(item.price || 0) *
-        Number(item.qty || 0),
+      (s,x)=>
+        s+x.price*x.qty,
       0
     );
 
 
-  const discountPercent =
-    Number(
-      DATA.settings.discountPercent || 15
+  const discount=
+    sub*
+    (
+      Number(
+        DATA.settings.discountPercent||15
+      )/100
     );
 
 
-  const gstPercent =
-    Number(
-      DATA.settings.gstPercent || 5
+  const gst=
+    (
+      sub-discount
+    )*
+    (
+      Number(
+        DATA.settings.gstPercent||5
+      )/100
     );
 
 
-  const discount =
-    subtotal *
-    discountPercent /
-    100;
+  const total=
+    sub-discount+gst;
 
 
-  const gst =
-    (subtotal - discount) *
-    gstPercent /
-    100;
+  if($('#cartSummary')){
 
-
-  const total =
-    subtotal -
-    discount +
-    gst;
-
-
-  if ($('#cartSummary')) {
-
-    $('#cartSummary').innerHTML = `
+    $('#cartSummary').innerHTML=`
 
       <div class="sum">
 
@@ -1862,7 +1283,7 @@ function renderCart() {
         </span>
 
         <b>
-          ${money(subtotal)}
+          ${money(sub)}
         </b>
 
       </div>
@@ -1871,11 +1292,15 @@ function renderCart() {
       <div class="sum">
 
         <span>
-          Discount (${discountPercent}%)
+          Discount (
+          ${DATA.settings.discountPercent||15}%
+          )
         </span>
 
         <b style="color:#14863b">
+
           −${money(discount)}
+
         </b>
 
       </div>
@@ -1884,7 +1309,9 @@ function renderCart() {
       <div class="sum">
 
         <span>
-          GST (${gstPercent}%)
+          GST (
+          ${DATA.settings.gstPercent||5}%
+          )
         </span>
 
         <b>
@@ -1901,14 +1328,18 @@ function renderCart() {
         </span>
 
         <b style="color:var(--purple)">
+
           ${money(total)}
+
         </b>
 
       </div>
 
 
       <small style="color:#857686">
+
         Container charges are shown at checkout.
+
       </small>
 
     `;
@@ -1918,38 +1349,33 @@ function renderCart() {
 }
 
 
-function changeQty(index, difference) {
+function changeQty(i,d){
 
-  if (!cart[index]) {
-    return;
-  }
+  if(!cart[i])return;
 
-  cart[index].qty += difference;
+  cart[i].qty+=d;
 
-  if (cart[index].qty <= 0) {
-    cart.splice(index, 1);
+  if(cart[i].qty<=0){
+
+    cart.splice(i,1);
+
   }
 
   renderCart();
+
 }
 
 
-function removeItem(index) {
+function removeItem(i){
 
-  if (
-    index < 0 ||
-    index >= cart.length
-  ) {
-    return;
-  }
-
-  cart.splice(index, 1);
+  cart.splice(i,1);
 
   renderCart();
+
 }
 
 
-function openCart() {
+function openCart(){
 
   $('#cartDrawer')
     ?.classList.add('open');
@@ -1960,7 +1386,7 @@ function openCart() {
 }
 
 
-function closeCart() {
+function closeCart(){
 
   $('#cartDrawer')
     ?.classList.remove('open');
@@ -1971,19 +1397,16 @@ function closeCart() {
 }
 
 
-/* =========================================================
-   CHECKOUT
-   ========================================================= */
+function goCheckout(){
 
-function goCheckout() {
-
-  if (!cart.length) {
+  if(!cart.length){
 
     toast(
       'Please add items first'
     );
 
     return;
+
   }
 
   closeCart();
@@ -1996,7 +1419,7 @@ function goCheckout() {
 }
 
 
-function closeCheckout() {
+function closeCheckout(){
 
   $('#checkoutModal')
     ?.classList.remove('show');
@@ -2004,349 +1427,335 @@ function closeCheckout() {
 }
 
 
-function renderCheckout() {
+/* =========================
+   CHECKOUT
+========================= */
 
-  const subtotal =
+function renderCheckout(){
+
+  const sub=
     cart.reduce(
-      (sum, item) =>
-        sum +
-        Number(item.price || 0) *
-        Number(item.qty || 0),
+      (s,x)=>
+        s+x.price*x.qty,
       0
     );
 
 
-  const discountPercent =
-    Number(
-      DATA.settings.discountPercent || 15
+  const baseDiscount=
+    sub*
+    (
+      Number(
+        DATA.settings.discountPercent||15
+      )/100
     );
 
 
-  const gstPercent =
-    Number(
-      DATA.settings.gstPercent || 5
+  const gst=
+    (
+      sub-
+      baseDiscount-
+      couponDiscount
+    )*
+    (
+      Number(
+        DATA.settings.gstPercent||5
+      )/100
     );
 
 
-  const baseDiscount =
-    subtotal *
-    discountPercent /
-    100;
-
-
-  const gstBase =
-    subtotal -
-    baseDiscount -
-    couponDiscount;
-
-
-  const gst =
-    Math.max(0, gstBase) *
-    gstPercent /
-    100;
-
-
-  const container =
+  const container=
     cart.reduce(
-      (sum, item) =>
-        sum +
-        Number(
-          item.containerCharge ??
-          DATA.settings.defaultContainerCharge ??
-          0
-        ) *
-        Number(item.qty || 0),
+      (s,x)=>
+        s+
+        (
+          Number(
+            x.containerCharge ??
+            DATA.settings.defaultContainerCharge ??
+            0
+          )*
+          x.qty
+        ),
       0
     );
 
 
-  const total =
-    subtotal -
-    baseDiscount -
-    couponDiscount +
-    gst +
+  const total=
+    sub-
+    baseDiscount-
+    couponDiscount+
+    gst+
     container;
 
 
-  const checkoutTotal =
-    $('#checkoutTotal');
+  if($('#checkoutTotal')){
 
-  if (!checkoutTotal) {
-    return;
+    $('#checkoutTotal').innerHTML=`
+
+      <div class="sum">
+
+        <span>
+          Subtotal
+        </span>
+
+        <b>
+          ${money(sub)}
+        </b>
+
+      </div>
+
+
+      <div class="sum">
+
+        <span>
+          ${
+            DATA.settings.discountPercent||15
+          }% Discount
+        </span>
+
+        <b>
+          −${money(baseDiscount)}
+        </b>
+
+      </div>
+
+
+      <div class="sum">
+
+        <span>
+          Coupon
+          ${
+            appliedCoupon
+              ? '('+appliedCoupon+')'
+              : ''
+          }
+        </span>
+
+        <b>
+
+          ${
+            couponDiscount
+              ? '−'+money(couponDiscount)
+              : money(0)
+          }
+
+        </b>
+
+      </div>
+
+
+      <div class="sum">
+
+        <span>
+          GST (
+          ${DATA.settings.gstPercent||5}%
+          )
+        </span>
+
+        <b>
+          ${money(gst)}
+        </b>
+
+      </div>
+
+
+      <div class="sum">
+
+        <span>
+          Container
+        </span>
+
+        <b>
+          ${money(container)}
+        </b>
+
+      </div>
+
+
+      <div class="sum total">
+
+        <span>
+          Payable
+        </span>
+
+        <b style="color:var(--purple)">
+
+          ${money(total)}
+
+        </b>
+
+      </div>
+
+    `;
+
   }
 
-
-  checkoutTotal.innerHTML = `
-
-    <div class="sum">
-
-      <span>
-        Subtotal
-      </span>
-
-      <b>
-        ${money(subtotal)}
-      </b>
-
-    </div>
-
-
-    <div class="sum">
-
-      <span>
-        ${discountPercent}% Discount
-      </span>
-
-      <b>
-        −${money(baseDiscount)}
-      </b>
-
-    </div>
-
-
-    <div class="sum">
-
-      <span>
-        Coupon
-        ${
-          appliedCoupon
-            ? '(' +
-              escapeHtml(appliedCoupon) +
-              ')'
-            : ''
-        }
-      </span>
-
-      <b>
-        ${
-          couponDiscount
-            ? '−' +
-              money(couponDiscount)
-            : money(0)
-        }
-      </b>
-
-    </div>
-
-
-    <div class="sum">
-
-      <span>
-        GST (${gstPercent}%)
-      </span>
-
-      <b>
-        ${money(gst)}
-      </b>
-
-    </div>
-
-
-    <div class="sum">
-
-      <span>
-        Container
-      </span>
-
-      <b>
-        ${money(container)}
-      </b>
-
-    </div>
-
-
-    <div class="sum total">
-
-      <span>
-        Payable
-      </span>
-
-      <b style="color:var(--purple)">
-        ${money(total)}
-      </b>
-
-    </div>
-
-  `;
 }
 
 
-/* =========================================================
+/* =========================
    COUPON
-   ========================================================= */
+========================= */
 
-function applyCoupon() {
+function applyCoupon(){
 
-  const input =
-    $('#couponCode');
-
-  const code =
-    String(input?.value || '')
+  const code=
+    ($('#couponCode')?.value||'')
       .trim()
       .toUpperCase();
 
 
-  const subtotal =
+  const sub=
     cart.reduce(
-      (sum, item) =>
-        sum +
-        Number(item.price || 0) *
-        Number(item.qty || 0),
+      (s,x)=>
+        s+x.price*x.qty,
       0
     );
 
 
-  const coupon =
-    (DATA.coupons || [])
-      .find(item =>
-        item.active !== false &&
-        String(item.code || '')
-          .toUpperCase() === code
+  const c=
+    (DATA.coupons||[])
+      .find(
+        x=>
+          x.active!==false &&
+          String(x.code)
+            .toUpperCase()===code
       );
 
 
-  if (!coupon) {
+  if(!c){
 
-    couponDiscount = 0;
-    appliedCoupon = '';
+    couponDiscount=0;
 
-    if ($('#couponStatus')) {
+    appliedCoupon='';
 
-      $('#couponStatus').textContent =
+
+    if($('#couponStatus')){
+
+      $('#couponStatus').textContent=
         code
           ? 'Invalid coupon code.'
           : '';
 
-      $('#couponStatus').className =
-        'coupon-bad';
+      $('#couponStatus')
+        .className='coupon-bad';
 
     }
 
     renderCheckout();
 
     return;
+
   }
 
 
-  const minimum =
-    Number(
-      coupon.minOrder || 0
-    );
+  if(
+    sub<
+    Number(c.minOrder||0)
+  ){
+
+    couponDiscount=0;
+
+    appliedCoupon='';
 
 
-  if (subtotal < minimum) {
+    if($('#couponStatus')){
 
-    couponDiscount = 0;
-    appliedCoupon = '';
+      $('#couponStatus').textContent=
+        'Minimum order for this coupon is '+
+        money(c.minOrder);
 
-    if ($('#couponStatus')) {
-
-      $('#couponStatus').textContent =
-        'Minimum order for this coupon is ' +
-        money(minimum);
-
-      $('#couponStatus').className =
-        'coupon-bad';
+      $('#couponStatus')
+        .className='coupon-bad';
 
     }
 
     renderCheckout();
 
     return;
-  }
-
-
-  const value =
-    Number(
-      coupon.value || 0
-    );
-
-
-  if (
-    String(coupon.type || '')
-      .toLowerCase() === 'flat'
-  ) {
-
-    couponDiscount =
-      Math.min(
-        subtotal,
-        value
-      );
-
-  } else {
-
-    couponDiscount =
-      subtotal *
-      value /
-      100;
 
   }
 
 
-  appliedCoupon =
-    coupon.code;
+  couponDiscount=
+    c.type==='flat'
+      ? Math.min(
+          sub,
+          Number(c.value||0)
+        )
+      : sub*
+        Number(c.value||0)/
+        100;
 
 
-  if ($('#couponStatus')) {
+  appliedCoupon=c.code;
 
-    $('#couponStatus').textContent =
+
+  if($('#couponStatus')){
+
+    $('#couponStatus').textContent=
       'Coupon applied ✓';
 
-    $('#couponStatus').className =
-      'coupon-ok';
+    $('#couponStatus')
+      .className='coupon-ok';
 
   }
 
 
   renderCheckout();
+
 }
 
 
-/* =========================================================
+/* =========================
    LOCATION
-   ========================================================= */
+========================= */
 
-function getLocation() {
+function getLocation(){
 
-  if (!navigator.geolocation) {
+  if(!navigator.geolocation){
 
-    if ($('#locationStatus')) {
-      $('#locationStatus').textContent =
+    if($('#locationStatus')){
+
+      $('#locationStatus').textContent=
         'Geolocation not supported';
+
     }
 
     return;
+
   }
 
 
-  if ($('#locationStatus')) {
-    $('#locationStatus').textContent =
+  if($('#locationStatus')){
+
+    $('#locationStatus').textContent=
       'Getting location…';
+
   }
 
 
   navigator.geolocation.getCurrentPosition(
 
-    position => {
+    p=>{
 
-      customerLocation =
-        `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
+      customerLocation=
+        `https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`;
 
 
-      if ($('#locationStatus')) {
+      if($('#locationStatus')){
 
-        $('#locationStatus').textContent =
+        $('#locationStatus').textContent=
           'Current location added ✓';
 
       }
 
     },
 
-    () => {
+    ()=>{
 
-      if ($('#locationStatus')) {
+      if($('#locationStatus')){
 
-        $('#locationStatus').textContent =
+        $('#locationStatus').textContent=
           'Could not get location. Please enter address manually.';
 
       }
@@ -2358,552 +1767,92 @@ function getLocation() {
 }
 
 
-/* =========================================================
-   ONLINE ORDER
-   ========================================================= */
-
-async function submitCheckout(event) {
-
-  event.preventDefault();
-
-
-  const form =
-    event.target;
-
-  const formData =
-    new FormData(form);
-
-
-  const subtotal =
-    cart.reduce(
-      (sum, item) =>
-        sum +
-        Number(item.price || 0) *
-        Number(item.qty || 0),
-      0
-    );
-
-
-  const discountPercent =
-    Number(
-      DATA.settings.discountPercent || 15
-    );
-
-
-  const gstPercent =
-    Number(
-      DATA.settings.gstPercent || 5
-    );
-
-
-  const discount =
-    subtotal *
-    discountPercent /
-    100;
-
-
-  const gst =
-    Math.max(
-      0,
-      subtotal -
-      discount -
-      couponDiscount
-    ) *
-    gstPercent /
-    100;
-
-
-  const container =
-    cart.reduce(
-      (sum, item) =>
-        sum +
-        Number(
-          item.containerCharge ??
-          DATA.settings.defaultContainerCharge ??
-          0
-        ) *
-        Number(item.qty || 0),
-      0
-    );
-
-
-  const total =
-    subtotal -
-    discount -
-    couponDiscount +
-    gst +
-    container;
-
-
-  const customer = {
-
-    name:
-      formData.get('name'),
-
-    phone:
-      formData.get('phone'),
-
-    address:
-      formData.get('address'),
-
-    landmark:
-      formData.get('landmark'),
-
-    location:
-      customerLocation
-
-  };
-
-
-  const order = {
-
-    customer,
-
-    items: cart,
-
-    subtotal,
-
-    discount,
-
-    couponDiscount,
-
-    coupon: appliedCoupon,
-
-    gst,
-
-    containerCharge:
-      container,
-
-    total
-
-  };
-
-
-  try {
-
-    const response =
-      await fetch(
-        '/api/orders',
-        {
-          method: 'POST',
-
-          headers: {
-            'Content-Type':
-              'application/json'
-          },
-
-          body:
-            JSON.stringify(order)
-        }
-      );
-
-
-    if (!response.ok) {
-      throw new Error(
-        `Order request failed: ${response.status}`
-      );
-    }
-
-
-    const data =
-      await response.json();
-
-
-    let message =
-      '*WASABEE NEW ONLINE ORDER*\n';
-
-
-    message +=
-      `Order: ${
-        data.orderId ||
-        data.id ||
-        'NEW'
-      }\n\n`;
-
-
-    message +=
-      '*Customer*\n';
-
-
-    message +=
-      `Name: ${customer.name}\n`;
-
-
-    message +=
-      `Phone: ${customer.phone}\n`;
-
-
-    message +=
-      `Address: ${customer.address}\n`;
-
-
-    message +=
-      `Landmark: ${
-        customer.landmark || '-'
-      }\n`;
-
-
-    message +=
-      `Location: ${
-        customerLocation || '-'
-      }\n\n`;
-
-
-    message +=
-      '*Items*\n';
-
-
-    cart.forEach(item => {
-
-      message +=
-        `• ${item.name}`;
-
-
-      if (item.variant) {
-
-        message +=
-          ` (${item.variant})`;
-
-      }
-
-
-      if (item.addons?.length) {
-
-        const addons =
-          item.addons
-            .map(addon =>
-              typeof addon === 'string'
-                ? addon
-                : addon.name
-            )
-            .join(', ');
-
-        message +=
-          ` [${addons}]`;
-
-      }
-
-
-      message +=
-        ` × ${item.qty} = ${
-          money(
-            item.price *
-            item.qty
-          )
-        }\n`;
-
-    });
-
-
-    message +=
-      `\nSubtotal: ${money(subtotal)}\n`;
-
-
-    message +=
-      `Discount: -${money(discount)}\n`;
-
-
-    message +=
-      `Coupon ${
-        appliedCoupon || ''
-      }: -${money(couponDiscount)}\n`;
-
-
-    message +=
-      `GST: ${money(gst)}\n`;
-
-
-    message +=
-      `Container: ${money(container)}\n`;
-
-
-    message +=
-      `*TOTAL: ${money(total)}*`;
-
-
-    const whatsapp =
-      DATA.settings.whatsappNumber;
-
-
-    if (whatsapp) {
-
-      window.open(
-        `https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`,
-        '_blank'
-      );
-
-    }
-
-
-    cart = [];
-
-    couponDiscount = 0;
-
-    appliedCoupon = '';
-
-    customerLocation = '';
-
-
-    renderCart();
-
-    closeCheckout();
-
-
-    if (form) {
-      form.reset();
-    }
-
-
-    if ($('#couponStatus')) {
-      $('#couponStatus').textContent = '';
-      $('#couponStatus').className = '';
-    }
-
-
-    if ($('#locationStatus')) {
-      $('#locationStatus').textContent =
-        'Location not added';
-    }
-
-
-    toast(
-      'Order sent to WhatsApp ✓'
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      'CHECKOUT ERROR:',
-      error
-    );
-
-    toast(
-      'Could not place order. Please try again.'
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   TABLE BOOKING
-   ========================================================= */
-
-async function submitBooking(event) {
-
-  event.preventDefault();
-
-
-  const form =
-    event.target;
-
-  const formData =
-    new FormData(form);
-
-
-  const booking =
-    Object.fromEntries(
-      formData.entries()
-    );
-
-
-  try {
-
-    const response =
-      await fetch(
-        '/api/bookings',
-        {
-          method: 'POST',
-
-          headers: {
-            'Content-Type':
-              'application/json'
-          },
-
-          body:
-            JSON.stringify(booking)
-        }
-      );
-
-
-    if (!response.ok) {
-      throw new Error(
-        `Booking request failed: ${response.status}`
-      );
-    }
-
-
-    const text =
-      `*WASABEE TABLE BOOKING REQUEST*\n` +
-      `Name: ${booking.name}\n` +
-      `Phone: ${booking.phone}\n` +
-      `Date: ${booking.date}\n` +
-      `Time: ${booking.time}\n` +
-      `Guests: ${booking.guests}\n` +
-      `Notes: ${booking.notes || '-'}`;
-
-
-    const whatsapp =
-      DATA.settings.whatsappNumber;
-
-
-    if (whatsapp) {
-
-      window.open(
-        `https://wa.me/${whatsapp}?text=${encodeURIComponent(text)}`,
-        '_blank'
-      );
-
-    }
-
-
-    form.reset();
-
-
-    toast(
-      'Booking request sent ✓'
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      'BOOKING ERROR:',
-      error
-    );
-
-    toast(
-      'Booking could not be sent.'
-    );
-
-  }
-
-}
-
-
-/* =========================================================
+/* =========================
    REVIEWS
-   ========================================================= */
+========================= */
 
-function renderReviews() {
+function renderReviews(){
 
-  const reviews =
-    Array.isArray(DATA.reviews)
-      ? DATA.reviews
-      : [];
+  const rs=
+    DATA.reviews||[];
 
 
-  const reviewsList =
-    $('#reviewsList');
+  if($('#reviewsList')){
 
+    $('#reviewsList').innerHTML=
 
-  if (reviewsList) {
+      rs.length
 
-    if (!reviews.length) {
+        ? rs.map(r=>`
 
-      reviewsList.innerHTML = `
-        <div class="review">
+          <div class="review">
 
-          <div class="stars">
-            ★★★★★
-          </div>
-
-          <h4>
-            Be our first reviewer
-          </h4>
-
-          <p>
-            Share your WASABEE experience with us.
-          </p>
-
-        </div>
-      `;
-
-    } else {
-
-      reviewsList.innerHTML =
-        reviews.map(review => {
-
-          const rating =
-            Math.max(
-              0,
-              Math.min(
-                5,
-                Number(
-                  review.rating || 5
-                )
-              )
-            );
-
-
-          let date = '';
-
-          if (review.createdAt) {
-
-            const parsedDate =
-              new Date(
-                review.createdAt
-              );
-
-            if (
-              !Number.isNaN(
-                parsedDate.getTime()
-              )
-            ) {
-
-              date =
-                parsedDate.toLocaleDateString();
-
-            }
-
-          }
-
-
-          return `
-            <div class="review">
-
-              <div class="stars">
-                ${'★'.repeat(rating)}
-                ${'☆'.repeat(5 - rating)}
-              </div>
-
-              <h4>
-                ${escapeHtml(
-                  review.name || 'Guest'
-                )}
-              </h4>
-
-              <p>
-                ${escapeHtml(
-                  review.comment || ''
-                )}
-              </p>
+            <div class="stars">
 
               ${
-                date
-                  ? `<small>${date}</small>`
-                  : ''
+                '★'.repeat(
+                  Number(r.rating||5)
+                )
+              }
+
+              ${
+                '☆'.repeat(
+                  5-Number(r.rating||5)
+                )
               }
 
             </div>
-          `;
 
-        }).join('');
+            <h4>
+              ${r.name||'Guest'}
+            </h4>
 
-    }
+            <p>
+              ${r.comment||''}
+            </p>
+
+            <small>
+
+              ${
+                r.createdAt
+                  ? new Date(
+                      r.createdAt
+                    ).toLocaleDateString()
+                  : ''
+              }
+
+            </small>
+
+          </div>
+
+        `).join('')
+
+        : `
+
+          <div class="review">
+
+            <div class="stars">
+              ★★★★★
+            </div>
+
+            <h4>
+              Be our first reviewer
+            </h4>
+
+            <p>
+              Share your WASABEE experience with us.
+            </p>
+
+          </div>
+
+        `;
 
   }
 
 
-  const summary =
-    $('#reviewSummary');
+  if($('#reviewSummary')){
 
-
-  if (summary) {
-
-    summary.innerHTML = `
+    $('#reviewSummary').innerHTML=`
 
       <div class="stars">
         ★★★★★
@@ -2911,7 +1860,7 @@ function renderReviews() {
 
       <b>
         ${
-          reviews.length
+          rs.length
             ? 'Loved by our guests'
             : 'Your review matters'
         }
@@ -2924,140 +1873,30 @@ function renderReviews() {
 }
 
 
-async function submitReview(event) {
+/* =========================
+   NAVIGATION
+========================= */
 
-  event.preventDefault();
+function jumpCat(id){
 
-
-  const form =
-    event.target;
-
-  const formData =
-    new FormData(form);
-
-
-  try {
-
-    const response =
-      await fetch(
-        '/api/reviews',
-        {
-          method: 'POST',
-
-          headers: {
-            'Content-Type':
-              'application/json'
-          },
-
-          body:
-            JSON.stringify({
-
-              name:
-                formData.get('name'),
-
-              comment:
-                formData.get('comment'),
-
-              rating:
-                reviewRating || 5
-
-            })
-        }
-      );
-
-
-    if (!response.ok) {
-      throw new Error(
-        `Review request failed: ${response.status}`
-      );
-    }
-
-
-    form.reset();
-
-    reviewRating = 5;
-
-
-    toast(
-      'Thank you for your review ✓'
-    );
-
-
-    const responseData =
-      await fetch(
-        '/api/public-data',
-        {
-          cache: 'no-store'
-        }
-      );
-
-
-    if (responseData.ok) {
-
-      DATA =
-        await responseData.json();
-
-      renderReviews();
-
-    }
-
-
-  } catch (error) {
-
-    console.error(
-      'REVIEW ERROR:',
-      error
-    );
-
-    toast(
-      'Could not submit review.'
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   CATEGORY NAVIGATION
-   ========================================================= */
-
-function jumpCat(id) {
-
-  const target =
-    document.querySelector(
-      '#cat-' + CSS.escape(String(id))
-    );
-
-
-  if (target) {
-
-    target.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
+  document
+    .querySelector('#cat-'+id)
+    ?.scrollIntoView({
+      behavior:'smooth',
+      block:'start'
     });
-
-  }
 
 
   $$('.cat')
-    .forEach(button => {
-      button.classList.remove(
-        'active'
-      );
-    });
+    .forEach(
+      x=>x.classList.remove('active')
+    );
 
 
-  /*
-    onclick="jumpCat(...)" sends the click event
-    through the global browser event in most browsers.
-    This is kept compatible with the existing HTML.
-  */
-
-  if (
-    typeof event !== 'undefined' &&
+  if(
+    typeof event!=='undefined' &&
     event?.currentTarget
-  ) {
+  ){
 
     event.currentTarget
       .classList.add('active');
@@ -3067,11 +1906,7 @@ function jumpCat(id) {
 }
 
 
-/* =========================================================
-   MOBILE NAVIGATION
-   ========================================================= */
-
-function toggleNav() {
+function toggleNav(){
 
   $('.topbar nav')
     ?.classList.toggle('show');
@@ -3079,257 +1914,458 @@ function toggleNav() {
 }
 
 
-/* =========================================================
-   EVENT LISTENERS
-   ========================================================= */
+function toast(msg){
 
-function setupEventListeners() {
+  const t=$('#toast');
 
-  /* -----------------------------------------
-     CHECKOUT
-     ----------------------------------------- */
+  if(!t)return;
 
-  const checkoutForm =
-    $('#checkoutForm');
+  t.className='toast show';
 
-  if (checkoutForm) {
+  t.textContent=msg;
 
-    checkoutForm.addEventListener(
-      'submit',
-      submitCheckout
-    );
-
-  }
-
-
-  /* -----------------------------------------
-     BOOKING
-     ----------------------------------------- */
-
-  const bookingForm =
-    $('#bookingForm');
-
-  if (bookingForm) {
-
-    bookingForm.addEventListener(
-      'submit',
-      submitBooking
-    );
-
-  }
-
-
-  /* -----------------------------------------
-     REVIEW
-     ----------------------------------------- */
-
-  const reviewForm =
-    $('#reviewForm');
-
-  if (reviewForm) {
-
-    reviewForm.addEventListener(
-      'submit',
-      submitReview
-    );
-
-  }
-
-
-  /* -----------------------------------------
-     STAR RATING
-     ----------------------------------------- */
-
-  const starsInput =
-    $('#starsInput');
-
-  if (starsInput) {
-
-    starsInput.addEventListener(
-      'click',
-      () => {
-
-        reviewRating = 5;
-
-        starsInput.style.color =
-          '#d09b00';
-
-      }
-    );
-
-  }
-
-
-  /* -----------------------------------------
-     MENU SEARCH
-     ----------------------------------------- */
-
-  const searchInput =
-    $('#menuSearch');
-
-  if (searchInput) {
-
-    searchInput.addEventListener(
-      'input',
-      searchMenu
-    );
-
-
-    searchInput.addEventListener(
-      'keydown',
-      event => {
-
-        if (event.key === 'Escape') {
-          closeMenuSearch();
-        }
-
-      }
-    );
-
-  }
-
-
-  /* -----------------------------------------
-     CART OVERLAY
-     ----------------------------------------- */
-
-  const overlay =
-    $('#overlay');
-
-  if (overlay) {
-
-    overlay.addEventListener(
-      'click',
-      closeCart
-    );
-
-  }
-
-
-  /* -----------------------------------------
-     CLOSE MODALS WHEN CLICKING OUTSIDE
-     ----------------------------------------- */
-
-  const itemModal =
-    $('#itemModal');
-
-  if (itemModal) {
-
-    itemModal.addEventListener(
-      'click',
-      event => {
-
-        if (
-          event.target ===
-          itemModal
-        ) {
-
-          closeItem();
-
-        }
-
-      }
-    );
-
-  }
-
-
-  const checkoutModal =
-    $('#checkoutModal');
-
-  if (checkoutModal) {
-
-    checkoutModal.addEventListener(
-      'click',
-      event => {
-
-        if (
-          event.target ===
-          checkoutModal
-        ) {
-
-          closeCheckout();
-
-        }
-
-      }
-    );
-
-  }
-
-
-  const menuSearchModal =
-    $('#menuSearchModal');
-
-  if (menuSearchModal) {
-
-    menuSearchModal.addEventListener(
-      'click',
-      event => {
-
-        if (
-          event.target ===
-          menuSearchModal
-        ) {
-
-          closeMenuSearch();
-
-        }
-
-      }
-    );
-
-  }
-
-
-  /* -----------------------------------------
-     ESC KEY
-     ----------------------------------------- */
-
-  document.addEventListener(
-    'keydown',
-    event => {
-
-      if (event.key !== 'Escape') {
-        return;
-      }
-
-      closeCart();
-      closeItem();
-      closeCheckout();
-      closeMenuSearch();
-
-    }
+  setTimeout(
+    ()=>t.className='toast',
+    2400
   );
 
 }
 
 
-/* =========================================================
-   START APPLICATION
-   ========================================================= */
+/* =========================
+   PAGE EVENTS
+========================= */
 
-if (
-  document.readyState ===
-  'loading'
-) {
+document.addEventListener(
+  'DOMContentLoaded',
+  ()=>{
 
-  document.addEventListener(
-    'DOMContentLoaded',
-    () => {
+    /* SEARCH */
 
-      setupEventListeners();
-      init();
+    $('#menuSearch')
+      ?.addEventListener(
+        'input',
+        searchMenu
+      );
 
-    },
-    {
-      once: true
-    }
-  );
 
-} else {
+    $('#menuSearch')
+      ?.addEventListener(
+        'keydown',
+        e=>{
 
-  setupEventListeners();
-  init();
+          if(e.key==='Escape'){
 
-}
+            clearMenuSearch();
+
+          }
+
+        }
+      );
+
+
+    /* CHECKOUT */
+
+    $('#checkoutForm')
+      ?.addEventListener(
+        'submit',
+        async e=>{
+
+          e.preventDefault();
+
+          try{
+
+            const f=
+              new FormData(e.target);
+
+
+            const sub=
+              cart.reduce(
+                (s,x)=>
+                  s+x.price*x.qty,
+                0
+              );
+
+
+            const discount=
+              sub*
+              Number(
+                DATA.settings.discountPercent||15
+              )/
+              100;
+
+
+            const gst=
+              (
+                sub-
+                discount-
+                couponDiscount
+              )*
+              Number(
+                DATA.settings.gstPercent||5
+              )/
+              100;
+
+
+            const container=
+              cart.reduce(
+                (s,x)=>
+                  s+
+                  (
+                    Number(
+                      x.containerCharge ??
+                      DATA.settings.defaultContainerCharge ??
+                      0
+                    )*
+                    x.qty
+                  ),
+                0
+              );
+
+
+            const total=
+              sub-
+              discount-
+              couponDiscount+
+              gst+
+              container;
+
+
+            const customer={
+
+              name:f.get('name'),
+
+              phone:f.get('phone'),
+
+              address:f.get('address'),
+
+              landmark:f.get('landmark'),
+
+              location:customerLocation
+
+            };
+
+
+            const order={
+
+              customer,
+
+              items:cart,
+
+              subtotal:sub,
+
+              discount,
+
+              gst,
+
+              containerCharge:container,
+
+              total
+
+            };
+
+
+            const r=
+              await fetch(
+                '/api/orders',
+                {
+                  method:'POST',
+
+                  headers:{
+                    'Content-Type':
+                      'application/json'
+                  },
+
+                  body:
+                    JSON.stringify(order)
+
+                }
+              );
+
+
+            const data=
+              await r.json();
+
+
+            let text=
+              `*WASABEE NEW ONLINE ORDER*\n`+
+              `Order: ${data.orderId}\n\n`+
+              `*Customer*\n`+
+              `Name: ${customer.name}\n`+
+              `Phone: ${customer.phone}\n`+
+              `Address: ${customer.address}\n`+
+              `Landmark: ${customer.landmark||'-'}\n`+
+              `Location: ${customerLocation||'-'}\n\n`+
+              `*Items*\n`;
+
+
+            cart.forEach(x=>{
+
+              text+=
+                `• ${x.name}`+
+                `${
+                  x.variant
+                    ? ' ('+x.variant+')'
+                    : ''
+                }`+
+                `${
+                  x.addons?.length
+                    ? ' ['+
+                      x.addons
+                        .map(
+                          a=>
+                            typeof a==='string'
+                              ? a
+                              : a.name
+                        )
+                        .join(', ')+
+                      ']'
+                    : ''
+                }`+
+                ` × ${x.qty}`+
+                ` = ${money(x.price*x.qty)}\n`;
+
+            });
+
+
+            text+=
+              `\nSubtotal: ${money(sub)}\n`+
+              `Discount: -${money(discount)}\n`+
+              `Coupon ${appliedCoupon||''}: -${money(couponDiscount)}\n`+
+              `GST: ${money(gst)}\n`+
+              `Container: ${money(container)}\n`+
+              `*TOTAL: ${money(total)}*`;
+
+
+            if(DATA.settings.whatsappNumber){
+
+              window.open(
+                `https://wa.me/${DATA.settings.whatsappNumber}?text=${encodeURIComponent(text)}`,
+                '_blank'
+              );
+
+            }
+
+
+            cart=[];
+
+            couponDiscount=0;
+
+            appliedCoupon='';
+
+            renderCart();
+
+            closeCheckout();
+
+            toast(
+              'Order sent to WhatsApp ✓'
+            );
+
+
+          }catch(err){
+
+            console.error(err);
+
+            toast(
+              'Could not place order. Please try again.'
+            );
+
+          }
+
+        }
+      );
+
+
+    /* BOOKING */
+
+    $('#bookingForm')
+      ?.addEventListener(
+        'submit',
+        async e=>{
+
+          e.preventDefault();
+
+          try{
+
+            const f=
+              new FormData(e.target);
+
+
+            const b=
+              Object.fromEntries(
+                f.entries()
+              );
+
+
+            await fetch(
+              '/api/bookings',
+              {
+                method:'POST',
+
+                headers:{
+                  'Content-Type':
+                    'application/json'
+                },
+
+                body:
+                  JSON.stringify(b)
+
+              }
+            );
+
+
+            const text=
+              `*WASABEE TABLE BOOKING REQUEST*\n`+
+              `Name: ${b.name}\n`+
+              `Phone: ${b.phone}\n`+
+              `Date: ${b.date}\n`+
+              `Time: ${b.time}\n`+
+              `Guests: ${b.guests}\n`+
+              `Notes: ${b.notes||'-'}`;
+
+
+            if(DATA.settings.whatsappNumber){
+
+              window.open(
+                `https://wa.me/${DATA.settings.whatsappNumber}?text=${encodeURIComponent(text)}`,
+                '_blank'
+              );
+
+            }
+
+
+            e.target.reset();
+
+            toast(
+              'Booking request sent ✓'
+            );
+
+
+          }catch(err){
+
+            console.error(err);
+
+            toast(
+              'Booking could not be sent.'
+            );
+
+          }
+
+        }
+      );
+
+
+    /* REVIEW */
+
+    $('#reviewForm')
+      ?.addEventListener(
+        'submit',
+        async e=>{
+
+          e.preventDefault();
+
+          try{
+
+            const f=
+              new FormData(e.target);
+
+
+            await fetch(
+              '/api/reviews',
+              {
+                method:'POST',
+
+                headers:{
+                  'Content-Type':
+                    'application/json'
+                },
+
+                body:
+                  JSON.stringify({
+
+                    name:f.get('name'),
+
+                    comment:f.get('comment'),
+
+                    rating:
+                      window.reviewRating||5
+
+                  })
+
+              }
+            );
+
+
+            e.target.reset();
+
+            toast(
+              'Thank you for your review ✓'
+            );
+
+
+            const r=
+              await fetch(
+                '/api/public-data'
+              );
+
+
+            DATA=
+              await r.json();
+
+
+            renderReviews();
+
+
+          }catch(err){
+
+            console.error(err);
+
+            toast(
+              'Could not submit review.'
+            );
+
+          }
+
+        }
+      );
+
+
+    /* STAR RATING */
+
+    $('#starsInput')
+      ?.addEventListener(
+        'click',
+        e=>{
+
+          if(
+            e.target.closest(
+              '#starsInput'
+            )
+          ){
+
+            window.reviewRating=5;
+
+            e.currentTarget.style.color=
+              '#d09b00';
+
+          }
+
+        }
+      );
+
+
+    /* CART OVERLAY */
+
+    $('#overlay')
+      ?.addEventListener(
+        'click',
+        closeCart
+      );
+
+
+    /* START WEBSITE */
+
+    init();
+
+  }
+);
