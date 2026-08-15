@@ -438,7 +438,7 @@ function renderMenu(){
 
         </div>
 
-        <div class="menu-grid">
+        <div class="grid">
 
           ${items.map(itemCard).join('')}
 
