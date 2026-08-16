@@ -485,7 +485,7 @@ function openMenuSearch(){
 
 }
 
-
+function toggleMenuSearch(){ const modal = document.getElementById('menuSearchModal'); if(!modal) return; modal.classList.add('show'); const input = document.getElementById('menuSearch'); if(input){ setTimeout(() => { input.focus(); }, 100); } }
 function closeMenuSearch(){
 
   clearMenuSearch();
