@@ -637,3 +637,205 @@
     transform: translateY(0) scale(1);
   }
 }
+/* =========================================================
+   WASABEE MENU CARD - FIX
+   ========================================================= */
+
+/* IMPORTANT: renderMenu() uses .menu-grid */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  width: 100%;
+}
+
+/* Compact premium food card */
+.menu-grid .food-card {
+  width: 100%;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 7px 24px rgba(42, 0, 42, .06);
+  display: flex;
+  flex-direction: column;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.menu-grid .food-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 32px rgba(42, 0, 42, .11);
+}
+
+
+/* Food image area */
+.menu-grid .food-img {
+  height: 165px;
+  min-height: 165px;
+  width: 100%;
+
+  background-color: #f8f6f8;
+  background-image: none;
+
+  background-size: cover;
+  background-position: center;
+
+  display: block;
+  position: relative;
+
+  overflow: hidden;
+
+  color: transparent;
+  font-size: 0;
+}
+
+
+/*
+   IMPORTANT:
+   Remove the old fake purple/pink placeholder.
+*/
+.menu-grid .food-img::before,
+.menu-grid .food-img::after {
+  display: none !important;
+  content: none !important;
+}
+
+
+/* If an image is inside food-img */
+.menu-grid .food-img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+
+/* Keep veg badge visible */
+.menu-grid .food-img .veg-dot {
+  display: block;
+  width: 18px;
+  height: 18px;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 5;
+
+  border: 2px solid #fff;
+  background: #0a6e2c;
+  border-radius: 3px;
+}
+
+
+/* Food body */
+.menu-grid .food-body {
+  padding: 14px;
+  gap: 7px;
+  min-height: 145px;
+}
+
+.menu-grid .food-body h4 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+.menu-grid .food-body p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+
+  min-height: 35px;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.menu-grid .variant-label {
+  font-size: 10px;
+  color: #7a6d7e;
+  font-weight: 700;
+}
+
+.menu-grid .price-row {
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.menu-grid .price {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.menu-grid .add {
+  border: 0;
+  background: linear-gradient(
+    135deg,
+    var(--purple),
+    var(--pink)
+  );
+  color: #fff;
+  border-radius: 9px;
+  padding: 8px 13px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1100px) {
+
+  .menu-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+}
+
+@media (max-width: 760px) {
+
+  .menu-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .menu-grid .food-img {
+    height: 135px;
+    min-height: 135px;
+  }
+
+  .menu-grid .food-body {
+    padding: 12px;
+    min-height: 135px;
+  }
+
+  .menu-grid .food-body h4 {
+    font-size: 14px;
+  }
+
+  .menu-grid .food-body p {
+    font-size: 11px;
+  }
+
+}
+
+@media (max-width: 470px) {
+
+  .menu-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .menu-grid .food-img {
+    height: 180px;
+    min-height: 180px;
+  }
+
+}
