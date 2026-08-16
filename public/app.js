@@ -493,97 +493,120 @@ function closeMenuSearch(){
 }
 
 
-function searchMenu(){
+function searchMenu() {
+  const input = document.getElementById('menuSearch');
+  const result = document.getElementById('menuSearchResults');
 
-  const input=$('#menuSearch');
+  if (!input || !result) return;
 
-  const result=
-    $('#menuSearchResult')||
-    $('#menuSearchResults');
+  const query = input.value.trim().toLowerCase();
 
-  if(!input)return;
-
-  const query=
-    input.value
-      .trim()
-      .toLowerCase();
-
-  const cards=$$('.food-card');
-
-  let found=0;
-
-  cards.forEach(card=>{
-
-    const text=
-      (card.innerText||'')
-      .toLowerCase();
-
-    if(!query){
-
-      card.style.display='';
-
-    }
-
-    else if(
-      text.includes(query)
-    ){
-
-      card.style.display='';
-      found++;
-
-    }
-
-    else{
-
-      card.style.display='none';
-
-    }
-
-  });
-
-
-  if(result){
-
-    if(!query){
-
-      result.innerHTML='';
-
-    }
-
-    else if(found){
-
-      result.innerHTML=`
-
-        <p class="search-found">
-
-          ${found}
-          menu item${found===1?'':'s'}
-          found
-
-        </p>
-
-      `;
-
-    }
-
-    else{
-
-      result.innerHTML=`
-
-        <p class="search-not-found">
-
-          No menu item found.
-
-        </p>
-
-      `;
-
-    }
-
+  if (!query) {
+    result.innerHTML = `
+      <div class="search-empty">
+        <div class="search-empty-icon">🍣</div>
+        <h3>Search our menu</h3>
+        <p>Type a dish name to find it instantly.</p>
+      </div>
+    `;
+    return;
   }
 
-}
+  const cats = Array.isArray(DATA.menu) ? DATA.menu : [];
+  const matches = [];
 
+  cats.forEach(cat => {
+    const items = flattenItems(cat);
+
+    items.forEach(item => {
+      if (item.active === false) return;
+
+      const name = String(item.name || '').toLowerCase();
+      const description = String(item.description || '').toLowerCase();
+
+      if (name.includes(query) || description.includes(query)) {
+        matches.push(item);
+      }
+    });
+  });
+
+  matches.sort((a, b) => {
+    const aName = String(a.name || '').toLowerCase();
+    const bName = String(b.name || '').toLowerCase();
+
+    if (aName === query) return -1;
+    if (bName === query) return 1;
+
+    if (aName.startsWith(query) && !bName.startsWith(query)) return -1;
+    if (bName.startsWith(query) && !aName.startsWith(query)) return 1;
+
+    return aName.localeCompare(bName);
+  });
+
+  if (!matches.length) {
+    result.innerHTML = `
+      <div class="search-empty">
+        <div class="search-empty-icon">🔍</div>
+        <h3>No menu item found</h3>
+        <p>Try another dish name.</p>
+      </div>
+    `;
+    return;
+  }
+
+  result.innerHTML = `
+    <div class="search-result-count">
+      ${matches.length} ${matches.length === 1 ? 'menu item' : 'menu items'} found
+    </div>
+
+    <div class="search-result-list">
+      ${matches.map(item => {
+        let price = Number(item.price || 0);
+
+        if (Array.isArray(item.variants) && item.variants.length) {
+          const prices = item.variants
+            .map(v => Number(v.price || 0))
+            .filter(v => v > 0);
+
+          if (prices.length) {
+            price = Math.min(...prices);
+          }
+        }
+
+        return `
+          <div class="search-result-card">
+            <div
+              class="search-result-image"
+              style="background-image:url('${imageFor(item)}')"
+            ></div>
+
+            <div class="search-result-info">
+              <h3>${item.name || ''}</h3>
+
+              <p>
+                ${item.description || 'Authentic oriental preparation.'}
+              </p>
+
+              <div class="search-result-bottom">
+                <strong>
+                  ${item.variants && item.variants.length ? 'From ' : ''}
+                  ${money(price)}
+                </strong>
+
+                <button
+                  class="search-add-btn"
+                  onclick='openItem(${JSON.stringify(item).replace(/'/g, "&#39;")})'
+                >
+                  Add +
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
 
 function clearMenuSearch(){
 
