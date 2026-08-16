@@ -85,3 +85,206 @@
   margin:15px 0 0;
   font-size:14px;
 }
+/* =========================================
+   MODERN WASABEE MENU SEARCH
+   Add this AFTER your existing search CSS
+   ========================================= */
+
+.menu-search-modal {
+  background:
+    radial-gradient(circle at 50% 10%, rgba(176, 0, 168, .12), transparent 38%),
+    rgba(12, 5, 14, .72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding-top: 120px;
+  animation: searchOverlayIn .25s ease;
+}
+
+.menu-search-modal.show {
+  display: flex;
+}
+
+.menu-search-card {
+  width: min(620px, 92%);
+  background: rgba(255, 255, 255, .98);
+  border: 1px solid rgba(128, 0, 128, .12);
+  border-radius: 24px;
+  padding: 30px;
+  position: relative;
+  box-shadow:
+    0 30px 80px rgba(42, 0, 42, .35),
+    0 8px 30px rgba(128, 0, 128, .12);
+  animation: searchCardIn .3s cubic-bezier(.2,.8,.2,1);
+}
+
+/* Top purple line */
+.menu-search-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 4px;
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(
+    90deg,
+    var(--purple),
+    var(--pink),
+    var(--purple)
+  );
+}
+
+/* Heading */
+.menu-search-card h2 {
+  margin: 0 45px 20px 0;
+  font-size: 25px;
+  font-weight: 900;
+  letter-spacing: -.6px;
+  color: var(--ink);
+}
+
+/* Search input wrapper effect */
+.menu-search-card input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px 20px;
+  border: 1px solid #e3d8e5;
+  border-radius: 15px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  outline: none;
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease,
+    transform .2s ease;
+  box-shadow: 0 5px 18px rgba(50, 0, 50, .05);
+}
+
+.menu-search-card input::placeholder {
+  color: #9a8f9d;
+  font-weight: 500;
+}
+
+.menu-search-card input:focus {
+  border-color: var(--purple);
+  box-shadow:
+    0 0 0 4px rgba(128, 0, 128, .08),
+    0 8px 25px rgba(128, 0, 128, .10);
+  transform: translateY(-1px);
+}
+
+/* Close button */
+.menu-search-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #eee2ef;
+  border-radius: 50%;
+  background: #fff;
+  color: #5d4d60;
+  font-size: 21px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    background .2s ease,
+    color .2s ease,
+    transform .2s ease,
+    border-color .2s ease;
+}
+
+.menu-search-close:hover {
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  color: #fff;
+  border-color: transparent;
+  transform: rotate(90deg) scale(1.05);
+}
+
+/* Search result text */
+.search-found {
+  margin: 14px 2px 0;
+  padding: 10px 13px;
+  border-radius: 11px;
+  background: #faf1fb;
+  color: var(--purple);
+  font-size: 13px;
+  font-weight: 800;
+  border: 1px solid #ead5eb;
+}
+
+.search-not-found {
+  margin: 14px 2px 0;
+  padding: 10px 13px;
+  border-radius: 11px;
+  background: #fff5f5;
+  color: #a52b3b;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid #f0d5d8;
+}
+
+/* Search icon inside input if your JS/HTML uses it */
+.menu-search-card .search-icon {
+  color: var(--purple);
+  font-size: 19px;
+}
+
+/* Animations */
+@keyframes searchOverlayIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes searchCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+
+  .menu-search-modal {
+    padding-top: 90px;
+    align-items: flex-start;
+  }
+
+  .menu-search-card {
+    width: calc(100% - 28px);
+    padding: 25px 20px 22px;
+    border-radius: 20px;
+  }
+
+  .menu-search-card h2 {
+    font-size: 21px;
+    margin-right: 42px;
+  }
+
+  .menu-search-card input {
+    padding: 15px 16px;
+    font-size: 14px;
+  }
+
+  .menu-search-close {
+    top: 15px;
+    right: 15px;
+    width: 35px;
+    height: 35px;
+  }
+}
