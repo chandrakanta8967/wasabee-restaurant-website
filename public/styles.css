@@ -288,3 +288,352 @@
     height: 35px;
   }
 }
+/* =====================================================
+   WASABEE - PREMIUM HEADER SEARCH & ACTION BUTTONS
+   Paste this at the VERY END of styles.css
+   ===================================================== */
+
+/* Header action area */
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Cart button */
+.head-actions .icon-btn {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #eaddea;
+  border-radius: 13px;
+  background: #fff;
+  color: var(--purple);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  box-shadow: 0 5px 18px rgba(80, 0, 80, .07);
+  transition: all .2s ease;
+}
+
+.head-actions .icon-btn:hover {
+  border-color: var(--purple);
+  background: #faf2fb;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(128, 0, 128, .14);
+}
+
+/* Cart number */
+.head-actions .icon-btn b {
+  right: -5px;
+  top: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  color: #fff;
+  border: 2px solid #fff;
+  font-size: 9px;
+  box-shadow: 0 3px 8px rgba(128, 0, 128, .25);
+}
+
+
+/* =====================================================
+   SEARCH BUTTON
+   Existing HTML:
+   <button class="icon-btn"
+           onclick="toggleMenuSearch()"
+           title="Search Menu">
+      🔍
+   </button>
+   ===================================================== */
+
+.head-actions .icon-btn[title="Search Menu"] {
+  width: auto;
+  min-width: 155px;
+  height: 44px;
+  padding: 0 15px;
+  border-radius: 13px;
+  gap: 9px;
+  font-size: 0;
+  justify-content: flex-start;
+  background: #fff;
+}
+
+/* Search icon */
+.head-actions .icon-btn[title="Search Menu"]::before {
+  content: "🔍";
+  font-size: 19px;
+  line-height: 1;
+}
+
+/* Find your food text */
+.head-actions .icon-btn[title="Search Menu"]::after {
+  content: "Find your food";
+  color: #756878;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .1px;
+}
+
+/* Search hover */
+.head-actions .icon-btn[title="Search Menu"]:hover {
+  background: linear-gradient(135deg, #fff, #faf0fb);
+  border-color: var(--purple);
+}
+
+.head-actions .icon-btn[title="Search Menu"]:hover::after {
+  color: var(--purple);
+}
+
+
+/* =====================================================
+   PREMIUM SEARCH MODAL
+   ===================================================== */
+
+.menu-search-modal {
+  background:
+    radial-gradient(
+      circle at 50% 15%,
+      rgba(176, 0, 168, .16),
+      transparent 38%
+    ),
+    rgba(20, 8, 20, .72);
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  padding-top: 105px;
+}
+
+/* Search card */
+.menu-search-card {
+  width: min(620px, 92%);
+  background: rgba(255, 255, 255, .98);
+  border: 1px solid rgba(128, 0, 128, .12);
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow:
+    0 30px 80px rgba(35, 0, 35, .35),
+    0 8px 30px rgba(128, 0, 128, .12);
+
+  animation: wasabeeSearchOpen .3s ease;
+}
+
+/* Purple top line */
+.menu-search-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 4px;
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(
+    90deg,
+    var(--purple),
+    var(--pink),
+    var(--purple)
+  );
+}
+
+
+/* Search title */
+.menu-search-card h2 {
+  margin: 0 45px 20px 0;
+  font-size: 25px;
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -.6px;
+}
+
+
+/* =====================================================
+   SEARCH INPUT
+   ===================================================== */
+
+.menu-search-card input {
+  width: 100%;
+  height: 56px;
+  box-sizing: border-box;
+
+  padding: 0 20px;
+
+  border: 1px solid #dfd3e1;
+  border-radius: 15px;
+
+  background: #fff;
+  color: var(--ink);
+
+  font-size: 15px;
+  font-weight: 600;
+
+  outline: none;
+
+  box-shadow:
+    0 5px 18px rgba(60, 0, 60, .05);
+
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease,
+    transform .2s ease;
+}
+
+
+/* Placeholder */
+.menu-search-card input::placeholder {
+  color: #9b909d;
+  font-weight: 600;
+}
+
+
+/* Focus */
+.menu-search-card input:focus {
+  border-color: var(--purple);
+
+  box-shadow:
+    0 0 0 4px rgba(128, 0, 128, .08),
+    0 10px 28px rgba(128, 0, 128, .10);
+
+  transform: translateY(-1px);
+}
+
+
+/* =====================================================
+   CLOSE BUTTON
+   ===================================================== */
+
+.menu-search-close {
+  width: 38px;
+  height: 38px;
+
+  top: 17px;
+  right: 17px;
+
+  border: 1px solid #eadfea;
+  border-radius: 50%;
+
+  background: #fff;
+  color: #6f6271;
+
+  font-size: 20px;
+
+  display: grid;
+  place-items: center;
+
+  transition: all .2s ease;
+}
+
+.menu-search-close:hover {
+  background: linear-gradient(
+    135deg,
+    var(--purple),
+    var(--pink)
+  );
+
+  color: #fff;
+  border-color: transparent;
+
+  transform: rotate(90deg);
+}
+
+
+/* =====================================================
+   SEARCH RESULT
+   ===================================================== */
+
+.search-found {
+  margin: 14px 0 0;
+  padding: 10px 13px;
+
+  border-radius: 11px;
+
+  background: #faf1fb;
+  border: 1px solid #ead5eb;
+
+  color: var(--purple);
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.search-not-found {
+  margin: 14px 0 0;
+  padding: 10px 13px;
+
+  border-radius: 11px;
+
+  background: #fff5f5;
+  border: 1px solid #f0d5d8;
+
+  color: #a52b3b;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+
+/* =====================================================
+   MOBILE
+   ===================================================== */
+
+@media (max-width: 760px) {
+
+  .head-actions {
+    gap: 7px;
+  }
+
+  .head-actions .icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+  }
+
+  .head-actions .icon-btn[title="Search Menu"] {
+    min-width: 40px;
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .head-actions .icon-btn[title="Search Menu"]::after {
+    display: none;
+  }
+
+  .head-actions .icon-btn[title="Search Menu"]::before {
+    font-size: 18px;
+  }
+
+  .menu-search-modal {
+    padding-top: 85px;
+  }
+
+  .menu-search-card {
+    width: calc(100% - 28px);
+    padding: 25px 20px 22px;
+    border-radius: 20px;
+  }
+
+  .menu-search-card h2 {
+    font-size: 21px;
+  }
+
+  .menu-search-card input {
+    height: 52px;
+    font-size: 14px;
+  }
+}
+
+
+/* Animation */
+@keyframes wasabeeSearchOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-15px) scale(.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
