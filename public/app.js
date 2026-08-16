@@ -87,44 +87,73 @@ function imageFor(item){
   return `https://source.unsplash.com/600x400/?${q},asian-food`;
 }
 
-function itemCard(item){
-  if(item.active===false)return '';
+function itemCard(item) {
 
-  const variants=Array.isArray(item.variants)?item.variants:[];
-  const hasVariants=variants.length>0;
-  const base=hasVariants?Math.min(...variants.map(v=>Number(v.price||0))):Number(item.price||0);
-  const label=hasVariants?`${variants.length} choices`:money(base);
-  const icon=String(item.name||'').toLowerCase().includes('soup')?'🍲':String(item.name||'').toLowerCase().includes('sushi')?'🍣':'🍽️';
+  const image = item.image || item.imageUrl || item.photo || '';
 
-  return `<article class="food-card">
-    <div class="food-img" style="background-image:linear-gradient(135deg,rgba(128,0,128,.35),rgba(15,0,15,.12)),url('${imageFor(item)}');background-size:cover;background-position:center;background-repeat:no-repeat">
-      <span>${icon}</span>
-    </div>
+  const imageStyle = image
+    ? `style="background-image:url('${image}')"`
+    : '';
 
-    <div class="food-body">
-      <h4>${item.name||''}</h4>
+  return `
+    <article class="food-card">
 
-      <p>
-        ${item.description||'Authentic oriental preparation crafted by WASABEE.'}
-      </p>
+      <div
+        class="food-img"
+        ${imageStyle}
+      >
 
-      ${hasVariants?`<span class="variant-label">${label} • Select before adding</span>`:''}
+        ${
+          item.veg
+            ? '<span class="veg-dot"></span>'
+            : ''
+        }
 
-      <div class="price-row">
-        <span class="price">
-          ${hasVariants?`From ${money(base)}`:money(base)}
-        </span>
-
-        <button
-          class="add"
-          type="button"
-          onclick='openItem(${JSON.stringify(item).replace(/'/g,"&#39;")})'
-        >
-          Add +
-        </button>
       </div>
-    </div>
-  </article>`;
+
+      <div class="food-body">
+
+        <h4>
+          ${item.name || ''}
+        </h4>
+
+        <p>
+          ${item.description || ''}
+        </p>
+
+        ${
+          item.variants && item.variants.length
+            ? `
+              <div class="variant-label">
+                ${item.variants.length} choices • Select before adding
+              </div>
+            `
+            : ''
+        }
+
+        <div class="price-row">
+
+          <span class="price">
+            ${
+              item.variants && item.variants.length
+                ? `From ₹${Math.min(...item.variants.map(v => Number(v.price) || 0))}`
+                : `₹${Number(item.price) || 0}`
+            }
+          </span>
+
+          <button
+            class="add"
+            onclick="openItem('${item.id}')"
+          >
+            Add +
+          </button>
+
+        </div>
+
+      </div>
+
+    </article>
+  `;
 }
 
 function renderMenu(){
