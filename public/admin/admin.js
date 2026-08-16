@@ -1,4 +1,4 @@
-let token=localStorage.getItem('wasabee_admin'),D={};
+let token=null,D={};
 
 const $=s=>document.querySelector(s);
 const $$=s=>document.querySelectorAll(s);
@@ -12,7 +12,7 @@ const r=await fetch('/api/admin/login',{
 method:'POST',
 headers:{'Content-Type':'application/json'},
 body:JSON.stringify({
-password:String(new FormData(e.target).get('password')||'').trim()
+password:new FormData(e.target).get('password')
 })
 });
 
@@ -953,365 +953,183 @@ await refreshAll();
 }
 
 let menuView='items';
-let menuSearch='';
 
 function renderMenu(){
 
-  const active=menuView;
-  const q=String(menuSearch||'').trim().toLowerCase();
+const active=menuView;
 
-  let html=`
-    <div class="toolbar menu-toolbar">
+let html=`
 
-      <div>
-        <span class="eyebrow">
-          MENU CONTROL CENTER
-        </span>
-
-        <h3>Menu Manager</h3>
-
-        <p class="muted">
-          Manage menu items, categories, variants, prices,
-          food images, visibility, container charges and add-ons
-          from one place.
-        </p>
-      </div>
+<div class="toolbar menu-toolbar">
 
-      <div class="toolbar-actions">
-
-        ${active==='items'?
-        `<button class="primary" onclick="addItem(0)">
-          + Add Item
-        </button>`:''}
+<div>
 
-        <button class="small-btn" onclick="addCategory()">
-          + Add Category
-        </button>
+<span class="eyebrow">
+MENU CONTROL CENTER
+</span>
 
-      </div>
+<h3>Menu Manager</h3>
 
-    </div>
-  `;
+<p class="muted">
+Manage menu items, categories, variants, prices,
+food images, visibility, container charges and add-ons
+from one place.
+</p>
 
-  html+=`
-    <div class="menu-tabs">
+</div>
 
-      <button
-        class="menu-tab ${active==='items'?'active':''}"
-        onclick="setMenuView('items')">
+<div class="toolbar-actions">
 
-        🍜 Items
-        <small>Edit dishes & prices</small>
+${active==='items'?
+`<button class="primary"
+onclick="addItem(0)">
++ Add Item
+</button>`:''}
 
-      </button>
+<button class="small-btn"
+onclick="addCategory()">
++ Add Category
+</button>
 
-      <button
-        class="menu-tab ${active==='categories'?'active':''}"
-        onclick="setMenuView('categories')">
+</div>
 
-        📂 Categories
-        <small>Organise your menu</small>
+</div>
+`;
 
-      </button>
+html+=`
 
-      <button
-        class="menu-tab ${active==='addons'?'active':''}"
-        onclick="setMenuView('addons')">
+<div class="menu-tabs">
 
-        ➕ Add-ons
-        <small>Sauces & extras</small>
+<button
+class="menu-tab ${active==='items'?'active':''}"
+onclick="setMenuView('items')">
 
-      </button>
+🍜 Items
+<small>Edit dishes & prices</small>
 
-    </div>
-  `;
+</button>
 
-  if(active==='addons')
-    return $('#menu').innerHTML=
-      html+renderAddonGroups();
+<button
+class="menu-tab ${active==='categories'?'active':''}"
+onclick="setMenuView('categories')">
 
-  if(active==='categories')
-    return $('#menu').innerHTML=
-      html+renderCategories();
+📂 Categories
+<small>Organise your menu</small>
 
+</button>
 
-  /* =========================
-     MENU SEARCH
-  ========================= */
+<button
+class="menu-tab ${active==='addons'?'active':''}"
+onclick="setMenuView('addons')">
 
-  html+=`
-    <div style="
-      margin:18px 0;
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-    ">
+➕ Add-ons
+<small>Sauces & extras</small>
 
-      <input
-        id="menuSearch"
-        class="search"
-        type="search"
-        placeholder="🔍 Search menu item, category, variant..."
-        value="${esc(menuSearch)}"
-        style="
-          width:100%;
-          max-width:520px;
-          padding:14px 16px;
-          font-size:16px;
-        "
-      >
+</button>
 
-      ${
-        q
-        ? `<button
-             class="small-btn"
-             onclick="menuSearch='';renderMenu()">
-             Clear
-           </button>`
-        : ''
-      }
+</div>
+`;
 
-    </div>
-  `;
+if(active==='addons')
+return $('#menu').innerHTML=
+html+renderAddonGroups();
 
+if(active==='categories')
+return $('#menu').innerHTML=
+html+renderCategories();
 
-  html+=`
-    <div class="helper-card">
+html+=`
 
-      <b>How to use:</b>
+<div class="helper-card">
 
-      Click <strong>Edit</strong> on any dish
-      → choose variants
-      → assign one or more
-      <strong>Add-on Groups</strong>.
+<b>How to use:</b>
 
-      Customers will then see those choices
-      before adding the dish to cart.
+Click <strong>Edit</strong> on any dish
+→ choose variants
+→ assign one or more
+<strong>Add-on Groups</strong>.
 
-    </div>
-  `;
+Customers will then see those choices
+before adding the dish to cart.
 
+</div>
+`;
 
-  let found=0;
+(D.menu||[]).forEach((c,ci)=>{
 
+html+=`
 
-  /* =========================
-     MENU ITEMS
-  ========================= */
+<div class="category-block">
 
-  (D.menu||[]).forEach((c,ci)=>{
+<div class="cat-head">
 
-    const categoryName=String(c.name||'').toLowerCase();
+<div>
 
-    const normalItems=(c.items||[]).filter(x=>{
+<h3>
+${c.icon||'🍽️'}
+${esc(c.name)}
+</h3>
 
-      if(!q)return true;
+<span class="muted">
+${(c.items||[]).length} item(s)
+</span>
 
-      const text=JSON.stringify({
-        name:x.name,
-        description:x.description,
-        variants:x.variants,
-        addons:x.addons,
-        category:c.name
-      }).toLowerCase();
+</div>
 
-      return text.includes(q) || categoryName.includes(q);
+<div>
 
-    });
+<button class="small-btn"
+onclick="addItem(${ci})">
++ Add Item
+</button>
 
+<button class="small-btn danger"
+onclick="deleteCategory(${ci})">
+Delete Category
+</button>
 
-    const subcategories=(c.subcategories||[])
-      .map((sub,si)=>{
+</div>
 
-        const items=(sub.items||[]).filter(x=>{
+</div>
 
-          if(!q)return true;
+<div class="items">
 
-          const text=JSON.stringify({
-            name:x.name,
-            description:x.description,
-            variants:x.variants,
-            addons:x.addons,
-            category:c.name,
-            subcategory:sub.name
-          }).toLowerCase();
+${c.items?
+c.items.map((x,ii)=>
+itemRow(ci,ii,x)
+).join(''):
 
-          return text.includes(q)
-            || categoryName.includes(q)
-            || String(sub.name||'').toLowerCase().includes(q);
+(c.subcategories||[]).map((sub,si)=>`
 
-        });
+<div class="subcat">
 
-        return {
-          sub,
-          si,
-          items
-        };
+<b>${esc(sub.name)}</b>
 
-      })
-      .filter(x=>x.items.length);
+<button class="small-btn"
+onclick="addSubItem(${ci},${si})">
++ Add Item
+</button>
 
+${sub.items.map((x,ii)=>
+itemRow(ci,ii,x,si)
+).join('')}
 
-    const categoryHasResults=
-      normalItems.length>0 ||
-      subcategories.length>0;
+</div>
 
+`).join('')}
 
-    if(q && !categoryHasResults){
-      return;
-    }
+</div>
 
+</div>
+`;
+});
 
-    found+=normalItems.length;
-
-    subcategories.forEach(x=>{
-      found+=x.items.length;
-    });
-
-
-    html+=`
-      <div class="category-block">
-
-        <div class="cat-head">
-
-          <div>
-
-            <h3>
-              ${c.icon||'🍽️'}
-              ${esc(c.name)}
-            </h3>
-
-            <span class="muted">
-              ${
-                q
-                ? `${normalItems.length + subcategories.reduce((n,s)=>n+s.items.length,0)} matching item(s)`
-                : `${(c.items||[]).length} item(s)`
-              }
-            </span>
-
-          </div>
-
-          <div>
-
-            <button
-              class="small-btn"
-              onclick="addItem(${ci})">
-              + Add Item
-            </button>
-
-            <button
-              class="small-btn danger"
-              onclick="deleteCategory(${ci})">
-              Delete Category
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <div class="items">
-
-          ${
-            normalItems.map(x=>{
-
-              const ii=(c.items||[]).indexOf(x);
-
-              return itemRow(ci,ii,x);
-
-            }).join('')
-          }
-
-
-          ${
-            subcategories.map(({sub,si,items})=>`
-
-              <div class="subcat">
-
-                <b>
-                  ${esc(sub.name)}
-                </b>
-
-                <button
-                  class="small-btn"
-                  onclick="addSubItem(${ci},${si})">
-                  + Add Item
-                </button>
-
-                ${
-                  items.map(x=>{
-
-                    const ii=(sub.items||[]).indexOf(x);
-
-                    return itemRow(ci,ii,x,si);
-
-                  }).join('')
-                }
-
-              </div>
-
-            `).join('')
-          }
-
-        </div>
-
-      </div>
-    `;
-
-  });
-
-
-  if(q && found===0){
-
-    html+=`
-      <div class="helper-card"
-           style="text-align:center;padding:30px">
-
-        <h3>No menu item found</h3>
-
-        <p class="muted">
-          Try another item name, category or variant.
-        </p>
-
-      </div>
-    `;
-
-  }
-
-
-  $('#menu').innerHTML=html;
-
-
-  /* SEARCH INPUT */
-
-  const searchInput=$('#menuSearch');
-
-  if(searchInput){
-
-    searchInput.oninput=e=>{
-
-      menuSearch=e.target.value;
-
-      renderMenu();
-
-    };
-
-  }
-
+$('#menu').innerHTML=html;
 }
 
-
 function setMenuView(v){
-
-  menuView=v;
-
-  if(v!=='items'){
-    menuSearch='';
-  }
-
-  renderMenu();
-
+menuView=v;
+renderMenu();
 }
 
 function renderCategories(){
@@ -1509,716 +1327,363 @@ Delete
 `;
 }
 
+function editItem(ci,ii,si){
 
-/* =========================================================
-   EDIT MENU ITEM
-   IMAGE UPLOAD CODE FIXED
-   ========================================================= */
+const x=
+si===null
+?D.menu[ci].items[ii]
+:D.menu[ci].subcategories[si].items[ii];
 
-function editItem(ci, ii, si) {
+const groups=D.settings.addonGroups||[];
 
-  const x =
-    si === null
-      ? D.menu[ci].items[ii]
-      : D.menu[ci].subcategories[si].items[ii];
+openEditor(`
 
-  const groups =
-    D.settings.addonGroups || [];
+<span class="eyebrow">
+MENU ITEM
+</span>
 
-  openEditor(`
+<h2>
+Edit Menu Item
+</h2>
 
-    <span class="eyebrow">
-      MENU ITEM
-    </span>
+<p class="muted">
+Set the dish details below.
+Customers only see add-ons assigned to this item.
+</p>
 
-    <h2>
-      Edit Menu Item
-    </h2>
+<form id="itemEdit" class="form-grid">
 
-    <p class="muted">
-      Set the dish details below.
-      Customers only see add-ons assigned to this item.
-    </p>
+<label>
+Item name
 
-    <form
-      id="itemEdit"
-      class="form-grid"
-    >
-
-      <label>
-
-        Item name
-
-        <input
-          name="name"
-          value="${esc(x.name)}"
-          required
-        >
+<input
+name="name"
+value="${esc(x.name)}"
+required
+>
 
-      </label>
+</label>
 
+<label>
 
-      <label>
+Single price
 
-        Single price
+<span class="hint">
+Use this only when there are no variants.
+</span>
 
-        <span class="hint">
-          Use this only when there are no variants.
-        </span>
+<input
+name="price"
+type="number"
+value="${x.price??''}"
+placeholder="e.g. 325"
+>
 
-        <input
-          name="price"
-          type="number"
-          value="${x.price ?? ''}"
-          placeholder="e.g. 325"
-        >
+</label>
 
-      </label>
-
-
-      <label>
-
-        Container charge
-
-        <input
-          name="containerCharge"
-          type="number"
-          value="${
-            x.containerCharge ??
-            D.settings.defaultContainerCharge ??
-            0
-          }"
-        >
+<label>
 
-      </label>
+Container charge
 
+<input
+name="containerCharge"
+type="number"
+value="${x.containerCharge??D.settings.defaultContainerCharge??0}"
+>
 
-      <!-- =========================
-           FOOD IMAGE
-      ========================== -->
+</label>
 
-      <label class="wide">
+<label>
 
-        <span>
-          Food Image
-        </span>
+Food Image
 
-        <input
-          type="file"
-          id="foodImageFile"
-          accept=".jpg,.jpeg,.png,.webp,.gif,.svg,image/*"
-        >
+<input
+type="file"
+id="foodImageFile"
+accept="image/*"
+>
 
-        <input
-          type="hidden"
-          name="image"
-          value="${esc(x.image || '')}"
-        >
-
-        <small class="hint">
-          Select a food image from your computer.
-          The image will be uploaded to
-          <b>public/uploads</b>.
-        </small>
-
-        <div
-          id="imagePreview"
-          style="
-            margin-top:10px;
-            display:${x.image ? 'block' : 'none'};
-          "
-        >
-
-          ${
-            x.image
-              ? `
-                <img
-                  src="${esc(x.image)}"
-                  alt="${esc(x.name)}"
-                  style="
-                    width:180px;
-                    height:130px;
-                    object-fit:cover;
-                    border-radius:12px;
-                    border:1px solid #ddd;
-                    display:block;
-                  "
-                >
-              `
-              : ''
-          }
-
-        </div>
-
-      </label>
-
-
-      <label>
-
-        Visibility
-
-        <select name="active">
-
-          <option
-            value="true"
-            ${
-              x.active !== false
-                ? 'selected'
-                : ''
-            }
-          >
-            Visible / ON
-          </option>
-
-          <option
-            value="false"
-            ${
-              x.active === false
-                ? 'selected'
-                : ''
-            }
-          >
-            Hidden / OFF
-          </option>
-
-        </select>
-
-      </label>
-
-
-      <label class="wide">
-
-        Description
-
-        <textarea
-          name="description"
-          placeholder="Short food description"
-        >${esc(x.description || '')}</textarea>
-
-      </label>
-
-
-      <label class="wide">
-
-        Variants
-
-        <span class="hint">
-          One per line: Variant name | Price
-        </span>
-
-        <textarea
-          name="variants"
-          placeholder="Veg | 275&#10;Non-Veg | 325"
-        >${
-          (x.variants || [])
-            .map(
-              v =>
-                v.name +
-                ' | ' +
-                v.price
-            )
-            .join('\n')
-        }</textarea>
-
-      </label>
-
-
-      <!-- =========================
-           ADD-ON GROUPS
-      ========================== -->
-
-      <div class="wide addon-assignment">
-
-        <div class="field-title">
-          ➕ Add-on Groups
-        </div>
-
-        <p class="muted">
-          Tick the groups that customers
-          should see for this dish.
-        </p>
-
-        <div class="addon-check-grid">
-
-          ${
-            groups.map(g => `
-
-              <label class="addon-check">
-
-                <input
-                  type="checkbox"
-                  name="addonGroup"
-                  value="${esc(g.id)}"
-                  ${
-                    (x.addonGroups || [])
-                      .includes(g.id)
-                      ? 'checked'
-                      : ''
-                  }
-                >
+<input
+type="hidden"
+name="image"
+value="${esc(x.image||'')}"
+>
 
-                <span>
+<small class="hint">
+Choose image from your computer
+</small>
 
-                  <b>
-                    ${esc(g.name)}
-                  </b>
-
-                  <small>
+</label>
 
-                    ${
-                      g.selection === 'single'
-                        ? 'Choose one'
-                        : 'Choose multiple'
-                    }
-
-                    ${
-                      g.required
-                        ? ' · Required'
-                        : ''
-                    }
+<label>
 
-                  </small>
+Visibility
 
-                </span>
+<select name="active">
 
-              </label>
+<option
+value="true"
+${x.active!==false?'selected':''}>
+Visible / ON
+</option>
 
-            `).join('')
-          }
+<option
+value="false"
+${x.active===false?'selected':''}>
+Hidden / OFF
+</option>
 
-          ${
-            !groups.length
-              ? `
-                <div class="empty-box">
-                  No add-on groups yet.
-                  Open <b>Add-ons</b> tab
-                  to create one.
-                </div>
-              `
-              : ''
-          }
+</select>
 
-        </div>
+</label>
 
-      </div>
+<label class="wide">
 
+Description
 
-      <!-- =========================
-           LEGACY ADDONS
-      ========================== -->
+<textarea
+name="description"
+placeholder="Short food description"
+>${esc(x.description||'')}</textarea>
 
-      <label class="wide legacy-addon">
+</label>
 
-        <span>
-          Legacy Add-ons (optional)
-        </span>
-
-        <span class="hint">
-          Keep this only for simple text choices.
-        </span>
-
-        <textarea
-          name="addons"
-          placeholder="One simple add-on per line"
-        >${
-          (x.addons || [])
-            .join('\n')
-        }</textarea>
-
-      </label>
-
-
-      <button
-        class="primary wide"
-        type="submit"
-      >
-        💾 Save Item
-      </button>
-
-    </form>
-  `);
+<label class="wide">
 
-
-  /* =========================
-     IMAGE PREVIEW
-  ========================== */
+Variants
 
-  const imageInput =
-    $('#foodImageFile');
+<span class="hint">
+One per line: Variant name | Price
+</span>
 
-  if (imageInput) {
+<textarea
+name="variants"
+placeholder="Veg | 275&#10;Non-Veg | 325"
+>${(x.variants||[])
+.map(v=>v.name+' | '+v.price)
+.join('\n')}</textarea>
 
-    imageInput.onchange = () => {
+</label>
 
-      const file =
-        imageInput.files[0];
+<div class="wide addon-assignment">
 
-      if (!file) return;
+<div class="field-title">
+➕ Add-on Groups
+</div>
 
-      const allowedTypes = [
-        'image/jpeg',
-        'image/png',
-        'image/webp',
-        'image/gif',
-        'image/svg+xml'
-      ];
+<p class="muted">
+Tick the groups that customers should see for this dish.
+</p>
 
-      if (
-        file.type &&
-        !allowedTypes.includes(file.type)
-      ) {
+<div class="addon-check-grid">
 
-        alert(
-          'Please select JPG, PNG, WEBP, GIF or SVG image.'
-        );
+${groups.map(g=>`
 
-        imageInput.value = '';
+<label class="addon-check">
 
-        return;
-      }
+<input
+type="checkbox"
+name="addonGroup"
+value="${esc(g.id)}"
+${(x.addonGroups||[]).includes(g.id)?'checked':''}
+>
 
-      const reader =
-        new FileReader();
+<span>
 
-      reader.onload = () => {
+<b>
+${esc(g.name)}
+</b>
 
-        const preview =
-          $('#imagePreview');
+<small>
+${esc(
+g.selection==='single'
+?'Choose one'
+:'Choose multiple'
+)}
+${g.required?' · Required':''}
+</small>
 
-        if (!preview) return;
+</span>
 
-        preview.style.display =
-          'block';
+</label>
 
-        preview.innerHTML = `
+`).join('')||
 
-          <img
-            src="${reader.result}"
-            alt="Preview"
-            style="
-              width:180px;
-              height:130px;
-              object-fit:cover;
-              border-radius:12px;
-              border:1px solid #ddd;
-              display:block;
-            "
-          >
+'<div class="empty-box">No add-on groups yet. Open <b>Add-ons</b> tab to create one.</div>'}
 
-          <small
-            class="hint"
-            style="
-              display:block;
-              margin-top:6px;
-            "
-          >
-            New image selected.
-            Click "Save Item" to upload it.
-          </small>
-        `;
-      };
+</div>
 
-      reader.readAsDataURL(file);
-    };
-  }
+</div>
 
+<label class="wide legacy-addon">
 
-  /* =========================
-     SAVE ITEM
-  ========================== */
+<span>
+Legacy Add-ons (optional)
+</span>
 
-  $('#itemEdit').onsubmit =
-    async e => {
+<span class="hint">
+Keep this only for simple text choices.
+</span>
 
-      e.preventDefault();
+<textarea
+name="addons"
+placeholder="One simple add-on per line"
+>${(x.addons||[]).join('\n')}</textarea>
 
-      const saveButton =
-        e.target.querySelector(
-          'button[type="submit"]'
-        );
+</label>
 
-      try {
+<button
+class="primary wide"
+type="submit">
+💾 Save Item
+</button>
 
-        if (saveButton) {
+</form>
+`);
 
-          saveButton.disabled = true;
+$('#itemEdit').onsubmit=async e=>{
 
-          saveButton.textContent =
-            '⏳ Saving...';
-        }
+e.preventDefault();
 
+try{
 
-        const f =
-          new FormData(e.target);
+const f=new FormData(e.target);
 
+x.name=f.get('name');
 
-        /* =========================
-           BASIC ITEM DATA
-        ========================== */
+x.price=
+f.get('price')
+?Number(f.get('price'))
+:undefined;
 
-        x.name =
-          f.get('name');
+x.containerCharge=
+Number(f.get('containerCharge')||0);
 
-        x.price =
-          f.get('price')
-            ? Number(f.get('price'))
-            : undefined;
+x.active=
+f.get('active')==='true';
 
-        x.containerCharge =
-          Number(
-            f.get(
-              'containerCharge'
-            ) || 0
-          );
+x.description=
+f.get('description');
 
-        x.active =
-          f.get('active') === 'true';
+const imageFile=
+$('#foodImageFile').files[0];
 
-        x.description =
-          f.get('description') || '';
+if(imageFile){
 
+const reader=new FileReader();
 
-        /* =========================
-           IMAGE UPLOAD
-        ========================== */
+const imageData=
+await new Promise((resolve,reject)=>{
 
-        const imageFile =
-          $('#foodImageFile')?.files?.[0];
+reader.onload=()=>{
+resolve(reader.result);
+};
 
+reader.onerror=reject;
 
-        if (imageFile) {
+reader.readAsDataURL(imageFile);
 
-          /*
-            Convert image to base64
-          */
+});
 
-          const imageData =
-            await new Promise(
-              (resolve, reject) => {
+const upload=
+await api(
+'/api/admin/upload',
+{
+method:'POST',
 
-                const reader =
-                  new FileReader();
+body:JSON.stringify({
 
-                reader.onload = () => {
+filename:imageFile.name,
 
-                  resolve(
-                    reader.result
-                  );
-                };
+data:imageData
 
-                reader.onerror =
-                  () => {
+})
+}
+);
 
-                    reject(
-                      new Error(
-                        'Could not read image file'
-                      )
-                    );
-                  };
+if(!upload.ok){
 
-                reader.readAsDataURL(
-                  imageFile
-                );
-              }
-            );
+throw new Error(
+upload.error||
+'Image upload failed'
+);
 
+}
 
-          /*
-            Upload to server
-          */
+x.image=upload.url;
 
-          const upload =
-            await api(
-              '/api/admin/upload',
-              {
-                method: 'POST',
+}else{
 
-                body:
-                  JSON.stringify({
-                    filename:
-                      imageFile.name,
+x.image=f.get('image');
 
-                    data:
-                      imageData
-                  })
-              }
-            );
+}
 
+x.variants=
+f.get('variants')
+.split('\n')
+.map(s=>s.trim())
+.filter(Boolean)
+.map(s=>{
 
-          if (
-            !upload ||
-            !upload.ok ||
-            !upload.url
-          ) {
+let[a,b]=
+s.split('|')
+.map(t=>t.trim());
 
-            throw new Error(
-              upload?.error ||
-              'Image upload failed'
-            );
-          }
+return{
+name:a,
+price:Number(b||0)
+};
 
+});
 
-          /*
-            IMPORTANT:
-            Save returned URL
-            inside menu item
-          */
+if(!x.variants.length){
 
-          x.image =
-            upload.url;
+delete x.variants;
 
+}
 
-          console.log(
-            'Image uploaded:',
-            upload.url
-          );
+x.addonGroups=[
 
-        } else {
+...e.target.querySelectorAll(
+'input[name="addonGroup"]:checked'
+)
 
-          /*
-            Keep existing image
-          */
+].map(el=>el.value);
 
-          x.image =
-            f.get('image') || '';
+x.addons=
+f.get('addons')
+.split('\n')
+.map(s=>s.trim())
+.filter(Boolean);
 
-        }
+if(!x.addons.length){
 
+delete x.addons;
 
-        /* =========================
-           VARIANTS
-        ========================== */
+}
 
-        x.variants =
-          String(
-            f.get('variants') || ''
-          )
-            .split('\n')
-            .map(
-              s => s.trim()
-            )
-            .filter(Boolean)
-            .map(s => {
+await saveMenu();
 
-              const parts =
-                s
-                  .split('|')
-                  .map(
-                    t => t.trim()
-                  );
+closeEditor();
 
-              return {
-                name:
-                  parts[0] || '',
-                price:
-                  Number(
-                    parts[1] || 0
-                  )
-              };
-            });
+alert('Item saved successfully');
 
+}catch(err){
 
-        if (
-          !x.variants.length
-        ) {
+console.error(
+'Save item error:',
+err
+);
 
-          delete x.variants;
-        }
+alert(
+'Save failed: '+
+(err.message||'Unknown error')
+);
 
+}
 
-        /* =========================
-           ADD-ON GROUPS
-        ========================== */
+};
 
-        x.addonGroups = [
-
-          ...e.target.querySelectorAll(
-            'input[name="addonGroup"]:checked'
-          )
-
-        ].map(
-          el => el.value
-        );
-
-
-        /* =========================
-           LEGACY ADDONS
-        ========================== */
-
-        x.addons =
-          String(
-            f.get('addons') || ''
-          )
-            .split('\n')
-            .map(
-              s => s.trim()
-            )
-            .filter(Boolean);
-
-
-        if (
-          !x.addons.length
-        ) {
-
-          delete x.addons;
-        }
-
-
-        /* =========================
-           SAVE MENU JSON
-        ========================== */
-
-        await saveMenu();
-
-
-        /*
-          Reload latest server data
-        */
-
-        D =
-          await api(
-            '/api/admin/data'
-          );
-
-
-        closeEditor();
-
-        renderMenu();
-
-
-        alert(
-          '✅ Item saved successfully!\n\n' +
-          'Food image uploaded and saved.'
-        );
-
-
-      } catch (err) {
-
-        console.error(
-          'Save item error:',
-          err
-        );
-
-        alert(
-          '❌ Save failed:\n\n' +
-          (
-            err.message ||
-            'Unknown error'
-          )
-        );
-
-      } finally {
-
-        if (saveButton) {
-
-          saveButton.disabled =
-            false;
-
-          saveButton.textContent =
-            '💾 Save Item';
-        }
-      }
-    };
 }
 
 function addItem(ci,si=null){
@@ -3369,5 +2834,3 @@ a.click();
 URL.revokeObjectURL(a.href);
 
 }
-
-load();
