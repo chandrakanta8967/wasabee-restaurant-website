@@ -34,23 +34,44 @@
 <div id="itemModal" class="modal"><div class="modal-card"><button class="modal-close" onclick="closeItem()">×</button><div id="itemModalBody"></div></div></div>
 <div id="checkoutModal" class="modal"><div class="modal-card checkout"><button class="modal-close" onclick="closeCheckout()">×</button><span class="eyebrow">SECURE CHECKOUT</span><h2>Your Details</h2><form id="checkoutForm"><input required name="name" placeholder="Full name"><input required name="phone" placeholder="Mobile number"><textarea required name="address" placeholder="Full delivery address"></textarea><div class="location-row"><button type="button" class="btn ghost" onclick="getLocation()">📍 Use Current Location</button><span id="locationStatus">Location not added</span></div><input name="landmark" placeholder="Landmark (optional)"><div class="coupon-row"><input name="coupon" id="couponCode" placeholder="Coupon code (optional)"><button type="button" class="btn ghost" onclick="applyCoupon()">Apply</button></div><div id="couponStatus"></div><div id="checkoutTotal"></div><button class="btn purple full">Place Order on WhatsApp →</button></form></div></div>
 <div id="menuSearchModal" class="menu-search-modal">
+
   <div class="menu-search-card">
-    <button class="menu-search-close" onclick="closeMenuSearch()">×</button>
+
+    <button
+      type="button"
+      class="menu-search-close"
+      onclick="toggleMenuSearch(false)"
+    >
+      ×
+    </button>
 
     <h2>Search Menu</h2>
 
-    <input
-      type="search"
-      id="menuSearch"
-      placeholder="🔍 Search menu item..."
-      autocomplete="off"
-      oninput="searchMenu()"
-    >
+    <div class="menu-search-input-wrap">
+      <span>🔍</span>
+
+      <input
+        type="text"
+        id="menuSearch"
+        placeholder="Search menu item..."
+        autocomplete="off"
+        oninput="searchMenu()"
+      />
+
+      <button
+        type="button"
+        id="menuSearchClear"
+        onclick="clearMenuSearch()"
+      >
+        ×
+      </button>
+    </div>
 
     <div id="menuSearchResults"></div>
-  </div>
-</div>
 
+  </div>
+
+</div>
 <script src="/app.js"></script>
 </body>
 </html>
